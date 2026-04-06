@@ -30,8 +30,8 @@ async function startServer() {
       { id: 'p2', address: '456 Pine Ave', community: 'Pine Valley', beds: 3, baths: 2, size: 1800, price: 620000, isOurInventory: true }
     ],
     contacts: [
-      { id: 'c1', fullName: 'John Smith', email: 'john@example.com', type: 'buyer', phoneNumber: '555-0101' },
-      { id: 'c2', fullName: 'Sarah Johnson', email: 'sarah@example.com', type: 'seller', phoneNumber: '555-0102' }
+      { id: 'c1', fullName: 'John Smith', email: 'john@example.com', type: 'buyer', phoneNumber: '555-0101', company: 'Smith Co', assignedTo: 'u2', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'c2', fullName: 'Sarah Johnson', email: 'sarah@example.com', type: 'seller', phoneNumber: '555-0102', company: 'Johnson Realty', assignedTo: 'u2', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
     ],
     deals: [
       { id: 'd1', propertyId: 'p1', stageId: '1', value: 850000, contactIds: ['c1'], createdAt: new Date().toISOString() },
@@ -65,9 +65,24 @@ async function startServer() {
   app.post("/api/:collection", (req, res) => {
     const { collection } = req.params;
     if (db[collection]) {
-      const newItem = { ...req.body, id: Math.random().toString(36).substr(2, 9), createdAt: new Date() };
+      const newItem = { ...req.body, id: Math.random().toString(36).substr(2, 9), createdAt: new Date(), updatedAt: new Date() };
       db[collection].push(newItem);
       res.status(201).json(newItem);
+    } else {
+      res.status(404).json({ error: "Collection not found" });
+    }
+  });
+
+  app.put("/api/:collection/:id", (req, res) => {
+    const { collection, id } = req.params;
+    if (db[collection]) {
+      const index = db[collection].findIndex(item => item.id === id);
+      if (index !== -1) {
+        db[collection][index] = { ...db[collection][index], ...req.body, updatedAt: new Date() };
+        res.json(db[collection][index]);
+      } else {
+        res.status(404).json({ error: "Item not found" });
+      }
     } else {
       res.status(404).json({ error: "Collection not found" });
     }

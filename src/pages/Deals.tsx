@@ -17,7 +17,7 @@ import { cn } from '../lib/utils';
 
 import { Link } from 'react-router-dom';
 
-const DealCard = ({ deal }: { deal: Deal }) => (
+const DealCard: React.FC<{ deal: Deal }> = ({ deal }) => (
   <Link to={`/deals/${deal.id}`}>
     <motion.div
       layout

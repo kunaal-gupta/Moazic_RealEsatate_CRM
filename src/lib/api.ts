@@ -1,4 +1,4 @@
-import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage } from './types';
+import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage } from '../types';
 
 const API_BASE = '/api';
 
@@ -28,6 +28,7 @@ export const api = {
   contacts: {
     list: () => fetcher<Contact[]>('/contacts'),
     create: (data: Partial<Contact>) => fetcher<Contact>('/contacts', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Contact>) => fetcher<Contact>(`/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   deals: {
     list: () => fetcher<Deal[]>('/deals'),

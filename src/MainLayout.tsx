@@ -19,7 +19,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
-const SidebarItem = ({ icon: Icon, label, to, collapsed }: { icon: any, label: string, to: string, collapsed: boolean }) => {
+const SidebarItem: React.FC<{ icon: any, label: string, to: string, collapsed: boolean }> = ({ icon: Icon, label, to, collapsed }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
@@ -109,7 +109,13 @@ export default function MainLayout() {
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
           {navItems.map((item) => (
-            <SidebarItem key={item.to} {...item} collapsed={collapsed} />
+            <SidebarItem 
+              key={item.to} 
+              icon={item.icon} 
+              label={item.label} 
+              to={item.to} 
+              collapsed={collapsed} 
+            />
           ))}
         </nav>
 

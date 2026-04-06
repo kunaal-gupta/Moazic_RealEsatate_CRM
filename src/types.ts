@@ -41,8 +41,11 @@ export interface Contact {
   phoneNumber?: string;
   type: 'buyer' | 'seller' | 'investor';
   assignedTo?: string; // User ID
+  createdBy?: string; // User ID
+  linkedUser?: string; // User ID
   company?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface DealStage {
