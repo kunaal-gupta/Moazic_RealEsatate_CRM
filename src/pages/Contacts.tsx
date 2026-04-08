@@ -24,6 +24,7 @@ export default function Contacts() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(false);
@@ -49,12 +50,14 @@ export default function Contacts() {
 
   const filteredContacts = contacts.filter(contact => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       contact.fullName.toLowerCase().includes(searchLower) ||
       contact.email.toLowerCase().includes(searchLower) ||
       (contact.company?.toLowerCase() || '').includes(searchLower) ||
       (contact.phoneNumber?.toLowerCase() || '').includes(searchLower)
     );
+    const matchesType = typeFilter === 'all' || contact.type === typeFilter;
+    return matchesSearch && matchesType;
   });
 
   const handleContactClick = (contact: Contact) => {
@@ -128,9 +131,19 @@ export default function Contacts() {
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-700 transition-all">
-            <Filter size={16} /> Filters
-          </button>
+          <div className="relative">
+            <select 
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="appearance-none flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-10"
+            >
+              <option value="all">All Types</option>
+              <option value="buyer">Buyer</option>
+              <option value="seller">Seller</option>
+              <option value="investor">Investor</option>
+            </select>
+            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+          </div>
         </div>
 
         <div className="overflow-x-auto">

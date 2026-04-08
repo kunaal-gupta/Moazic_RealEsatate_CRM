@@ -1,4 +1,4 @@
-import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage } from '../types';
+import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage, EmailTemplate, Email } from '../types';
 
 const API_BASE = '/api';
 
@@ -33,6 +33,7 @@ export const api = {
   deals: {
     list: () => fetcher<Deal[]>('/deals'),
     create: (data: Partial<Deal>) => fetcher<Deal>('/deals', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Deal>) => fetcher<Deal>(`/deals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   stages: {
     list: () => fetcher<DealStage[]>('/dealStages'),
@@ -44,9 +45,20 @@ export const api = {
   tasks: {
     list: () => fetcher<Task[]>('/tasks'),
     create: (data: Partial<Task>) => fetcher<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Task>) => fetcher<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   showings: {
     list: () => fetcher<Showing[]>('/showings'),
     create: (data: Partial<Showing>) => fetcher<Showing>('/showings', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  emailTemplates: {
+    list: () => fetcher<EmailTemplate[]>('/emailTemplates'),
+    create: (data: Partial<EmailTemplate>) => fetcher<EmailTemplate>('/emailTemplates', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<EmailTemplate>) => fetcher<EmailTemplate>(`/emailTemplates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher<void>(`/emailTemplates/${id}`, { method: 'DELETE' }),
+  },
+  emails: {
+    list: () => fetcher<Email[]>('/emails'),
+    create: (data: Partial<Email>) => fetcher<Email>('/emails', { method: 'POST', body: JSON.stringify(data) }),
   },
 };

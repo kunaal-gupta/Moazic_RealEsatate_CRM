@@ -26,8 +26,62 @@ async function startServer() {
       { id: 'u2', fullName: 'Jane Doe', email: 'jane@luxecrm.com', role: 'agent', status: 'active' }
     ],
     properties: [
-      { id: 'p1', address: '123 Maple St', community: 'Oak Ridge', beds: 4, baths: 3, size: 2400, price: 850000, isOurInventory: true },
-      { id: 'p2', address: '456 Pine Ave', community: 'Pine Valley', beds: 3, baths: 2, size: 1800, price: 620000, isOurInventory: true }
+      { 
+        id: 'p1', 
+        address: '123 Maple St', 
+        community: 'Oak Ridge', 
+        beds: 4, 
+        baths: 3, 
+        size: 2400, 
+        price: 850000, 
+        isOurInventory: true,
+        builder: 'Luxury Homes Inc',
+        yearBuilt: 2022,
+        propertyClass: 'Residential',
+        buildingType: 'Detached',
+        style: 'Modern',
+        model: 'The Grand',
+        blockLot: 'B12-L4',
+        legalPlan: 'PL-9988',
+        occupancy: 'Vacant',
+        condoFees: 0,
+        flooring: 'Hardwood',
+        appliancesIncluded: true,
+        garageType: 'Double Attached',
+        floors: 2,
+        basement: 'Full',
+        basementDev: 'Finished',
+        separateEntrance: true,
+        addedDate: new Date().toISOString()
+      },
+      { 
+        id: 'p2', 
+        address: '456 Pine Ave', 
+        community: 'Pine Valley', 
+        beds: 3, 
+        baths: 2, 
+        size: 1800, 
+        price: 620000, 
+        isOurInventory: true,
+        builder: 'Classic Builds',
+        yearBuilt: 2018,
+        propertyClass: 'Residential',
+        buildingType: 'Semi-Detached',
+        style: 'Craftsman',
+        model: 'The Cozy',
+        blockLot: 'A5-L2',
+        legalPlan: 'PL-7766',
+        occupancy: 'Owner Occupied',
+        condoFees: 150,
+        flooring: 'Laminate',
+        appliancesIncluded: true,
+        garageType: 'Single Detached',
+        floors: 1,
+        basement: 'Partial',
+        basementDev: 'Unfinished',
+        separateEntrance: false,
+        addedDate: new Date().toISOString()
+      }
     ],
     contacts: [
       { id: 'c1', fullName: 'John Smith', email: 'john@example.com', type: 'buyer', phoneNumber: '555-0101', company: 'Smith Co', assignedTo: 'u2', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -41,8 +95,22 @@ async function startServer() {
       { id: 'a1', description: 'Initial call with John Smith', type: 'call', createdAt: new Date().toISOString() },
       { id: 'a2', description: 'Property viewing scheduled for Pine Ave', type: 'meeting', createdAt: new Date().toISOString() }
     ],
-    tasks: [],
+    tasks: [
+      { id: 't1', title: 'Follow up with John Smith', status: 'pending', dueDate: new Date(Date.now() + 86400000).toISOString(), description: 'Discuss the Maple St offer' },
+      { id: 't2', title: 'Send contract to Sarah', status: 'completed', dueDate: new Date().toISOString(), description: 'Finalize the listing agreement' },
+      { id: 't3', title: 'Schedule inspection for Oak Ridge', status: 'pending', dueDate: new Date(Date.now() + 172800000).toISOString(), description: 'Contact local inspector' }
+    ],
     showings: [],
+    emailTemplates: [
+      { id: 't1', name: 'Initial Lead Follow-up', subject: 'Welcome to LuxeCRM - Next Steps', body: 'Dear {{contact_name}},\n\nWelcome to LuxeCRM! We are excited to help you with your real estate needs.\n\nBest regards,\n{{agent_name}}' },
+      { id: 't2', name: 'Property Showing Confirmation', subject: 'Confirmed: Showing for {{property_address}}', body: 'Hi {{contact_name}},\n\nThis is to confirm your showing for {{property_address}} on {{showing_date}} at {{showing_time}}.\n\nSee you there!' },
+      { id: 't3', name: 'Offer Submission', subject: 'New Offer Received for {{property_address}}', body: 'Hello,\n\nWe have received a new offer for the property at {{property_address}}.\n\nDetails: {{offer_details}}' },
+      { id: 't4', name: 'Closing Documents', subject: 'Action Required: Closing Documents for {{deal_id}}', body: 'Dear {{contact_name}},\n\nPlease review and sign the attached closing documents for your deal.' },
+    ],
+    emails: [
+      { id: 'e1', contactId: 'c1', subject: 'Question about Maple St', body: 'Hi, I was wondering if the basement is fully finished...', status: 'sent', createdAt: new Date().toISOString() },
+      { id: 'e2', contactId: 'c2', subject: 'Offer documents', body: 'Attached are the signed documents for the Pine Ave listing...', status: 'sent', createdAt: new Date().toISOString() },
+    ],
     dealStages: [
       { id: '1', name: 'Lead', order: 1 },
       { id: '2', name: 'Showing', order: 2 },

@@ -24,14 +24,34 @@ export interface Property {
   buildingType?: string;
   style?: string;
   model?: string;
+  blockLot?: string;
+  legalPlan?: string;
   community: string;
   address: string;
+  occupancy?: string;
+  condoFees?: number;
+  cDom?: number;
+  dom?: number;
+  flooring?: string;
+  appliancesIncluded?: boolean;
+  jrHighSchool?: string;
+  srHighSchool?: string;
+  garageType?: string;
   beds?: number;
   baths?: number;
   size?: number;
-  price?: number;
-  isOurInventory: boolean;
+  price?: number; // Added for UI purposes, though not in Django model explicitly
+  floors?: number;
+  basement?: string;
+  basementDev?: string;
+  separateEntrance?: boolean;
+  possession?: string;
+  landscaped?: string;
+  denLevel?: string;
+  zeroLotLine?: boolean;
+  floorPlanUrl?: string;
   addedDate: string;
+  isOurInventory: boolean;
 }
 
 export interface Contact {
@@ -95,4 +115,22 @@ export interface Showing {
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
   participantIds: string[];
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+}
+
+export interface Email {
+  id: string;
+  contactId: string;
+  subject: string;
+  body: string;
+  status: 'pending' | 'sent' | 'failed';
+  scheduledAt?: string;
+  dealId?: string;
+  createdAt: string;
 }
