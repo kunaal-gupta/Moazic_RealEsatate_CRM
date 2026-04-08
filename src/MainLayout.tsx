@@ -18,7 +18,7 @@ import {
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
-import logo from "../assets/logo.png"; // or relative path
+import logo from "../assets/thumbnail.png"; // or relative path
 
 const SidebarItem: React.FC<{ icon: any, label: string, to: string, collapsed: boolean }> = ({ icon: Icon, label, to, collapsed }) => {
   const location = useLocation();
@@ -94,7 +94,7 @@ export default function MainLayout() {
               className="flex items-center gap-2"
             >
 
-            <div className="w-14 h-14 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="shadow-blue-500/30">
               <img src={logo} alt="logo" className="w-10 h-10 object-contain" />
             </div>
               <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
