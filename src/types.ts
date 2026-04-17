@@ -50,6 +50,7 @@ export interface Property {
   denLevel?: string;
   zeroLotLine?: boolean;
   floorPlanUrl?: string;
+  notes?: string;
   addedDate: string;
   isOurInventory: boolean;
 }
@@ -76,11 +77,28 @@ export interface DealStage {
 
 export interface Deal {
   id: string;
-  propertyId: string;
+  propertyIds: string[];
   assignedAgentId?: string;
   stageId: string;
   value?: number;
   contactIds: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadStage {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface Lead {
+  id: string;
+  contactId: string;
+  assignedAgentId?: string;
+  stageId: string;
+  value?: number;
   createdAt: string;
   updatedAt: string;
 }

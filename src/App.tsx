@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MainLayout from './MainLayout';
 import Dashboard from './pages/Dashboard';
 import Deals from './pages/Deals';
+import Leads from './pages/Leads';
 import Contacts from './pages/Contacts';
 import Properties from './pages/Properties';
 import Showings from './pages/Showings';
@@ -25,6 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
+          <Route path="leads" element={<Leads />} />
           <Route path="deals" element={<Deals />} />
           <Route path="deals/:id" element={<DealDetail />} />
           <Route path="contacts" element={<Contacts />} />

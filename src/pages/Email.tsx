@@ -303,7 +303,7 @@ export default function Email() {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-white">{getContactName(selectedEmail.contactId)}</p>
-                            <p className="text-xs text-slate-500">to me (kunaal@Domiq.com)</p>
+                            <p className="text-xs text-slate-500">to me (kunaal@luxecrm.com)</p>
                           </div>
                         </div>
                       </div>

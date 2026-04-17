@@ -1,4 +1,4 @@
-import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage, EmailTemplate, Email } from '../types';
+import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage, EmailTemplate, Email, Lead, LeadStage } from '../types';
 
 const API_BASE = '/api';
 
@@ -24,6 +24,7 @@ export const api = {
   properties: {
     list: () => fetcher<Property[]>('/properties'),
     create: (data: Partial<Property>) => fetcher<Property>('/properties', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Property>) => fetcher<Property>(`/properties/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   contacts: {
     list: () => fetcher<Contact[]>('/contacts'),
@@ -35,8 +36,17 @@ export const api = {
     create: (data: Partial<Deal>) => fetcher<Deal>('/deals', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Deal>) => fetcher<Deal>(`/deals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
+  leads: {
+    list: () => fetcher<Lead[]>('/leads'),
+    create: (data: Partial<Lead>) => fetcher<Lead>('/leads', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Lead>) => fetcher<Lead>(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher<void>(`/leads/${id}`, { method: 'DELETE' }),
+  },
   stages: {
     list: () => fetcher<DealStage[]>('/dealStages'),
+  },
+  leadStages: {
+    list: () => fetcher<LeadStage[]>('/leadStages'),
   },
   activities: {
     list: () => fetcher<Activity[]>('/activities'),

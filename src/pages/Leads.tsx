@@ -1,0 +1,515 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, 
+  MoreHorizontal, 
+  DollarSign, 
+  Calendar, 
+  Search,
+  Filter,
+  LayoutGrid,
+  List as ListIcon,
+  User,
+  Briefcase,
+  Trash2
+} from 'lucide-react';
+import { motion } from 'motion/react';
+import { 
+  DndContext, 
+  DragOverlay, 
+  closestCorners, 
+  KeyboardSensor, 
+  PointerSensor, 
+  TouchSensor,
+  useSensor, 
+  useSensors,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  useDroppable
+} from '@dnd-kit/core';
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { api } from '../lib/api';
+import { Lead, LeadStage, Contact } from '../types';
+import { cn } from '../lib/utils';
+import { Link } from 'react-router-dom';
+import Modal from '../components/Modal';
+
+const SortableLeadCard: React.FC<{ 
+  lead: Lead, 
+  contactName: string,
+  onConvert: (lead: Lead) => void,
+  onDelete: (id: string) => void
+}> = ({ lead, contactName, onConvert, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: lead.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <div 
+        className="bg-slate-800 border border-slate-700 p-4 rounded-xl mb-3 cursor-grab active:cursor-grabbing hover:border-blue-500/50 transition-all group relative"
+        style={{ touchAction: 'none' }}
+      >
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
+            ID: {lead.id.slice(0, 4)}
+          </span>
+          <div className="relative">
+            <button 
+              className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-700 transition-colors" 
+              onClick={(e) => { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                setShowMenu(!showMenu);
+              }}
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-10 py-1 overflow-hidden">
+                <button
+                  className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onConvert(lead);
+                    setShowMenu(false);
+                  }}
+                >
+                  <Briefcase size={14} className="text-blue-400" />
+                  Convert to Deal
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete(lead.id);
+                    setShowMenu(false);
+                  }}
+                >
+                  <Trash2 size={14} />
+                  Delete Lead
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <h4 className="text-sm font-bold text-white mb-2 group-hover:text-blue-400 transition-all">
+          {contactName}
+        </h4>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <DollarSign size={14} className="text-emerald-500" />
+            <span className="font-medium text-slate-200">${lead.value?.toLocaleString() || "0"}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Calendar size={14} />
+            <span>Added {new Date(lead.createdAt).toLocaleDateString()}</span>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-slate-700 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">
+              {contactName[0]}
+            </div>
+            <span className="text-[10px] text-slate-400 font-medium">Lead Contact</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DroppableColumn: React.FC<{ id: string, children: React.ReactNode }> = ({ id, children }) => {
+  const { setNodeRef } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className="flex-1 p-3 overflow-y-auto custom-scrollbar min-h-[150px]">
+      {children}
+    </div>
+  );
+};
+
+export default function Leads() {
+  const [stages, setStages] = useState<LeadStage[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
+  const [newLeadData, setNewLeadData] = useState({
+    contactId: '',
+    value: '',
+    stageId: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [s, l, c] = await Promise.all([
+          api.leadStages.list(), 
+          api.leads.list(),
+          api.contacts.list()
+        ]);
+        setStages(s.sort((a, b) => a.order - b.order));
+        setLeads(l);
+        setContacts(c);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadData();
+  }, []);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const activeLead = leads.find(l => l.id === activeId);
+    if (!activeLead) return;
+
+    const overStage = stages.find(s => s.id === overId);
+    const overLead = leads.find(l => l.id === overId);
+    const newStageId = overStage ? overStage.id : overLead?.stageId;
+
+    if (newStageId && activeLead.stageId !== newStageId) {
+      setLeads(prev => {
+        const activeIndex = prev.findIndex(l => l.id === activeId);
+        const updatedLeads = [...prev];
+        updatedLeads[activeIndex] = { ...activeLead, stageId: newStageId };
+        
+        if (overLead) {
+          const overIndex = updatedLeads.findIndex(l => l.id === overId);
+          return arrayMove(updatedLeads, activeIndex, overIndex);
+        }
+        
+        return updatedLeads;
+      });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const activeLead = leads.find(l => l.id === activeId);
+    if (!activeLead) return;
+
+    const overStage = stages.find(s => s.id === overId);
+    const overLead = leads.find(l => l.id === overId);
+    const newStageId = overStage ? overStage.id : overLead?.stageId;
+
+    if (newStageId) {
+      try {
+        await api.leads.update(activeId, { stageId: newStageId });
+      } catch (err) {
+        console.error("Failed to update lead stage:", err);
+      }
+    }
+  };
+
+  const getLeadsInStage = (stageId: string) => leads.filter(l => l.stageId === stageId);
+  const getContactName = (contactId: string) => contacts.find(c => c.id === contactId)?.fullName || "Unknown Contact";
+
+  const handleCreateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeadData.contactId || !newLeadData.stageId) return;
+
+    setIsSubmitting(true);
+    try {
+      const created = await api.leads.create({
+        contactId: newLeadData.contactId,
+        stageId: newLeadData.stageId,
+        value: parseFloat(newLeadData.value) || 0,
+      });
+      setLeads(prev => [...prev, created]);
+      setIsNewLeadModalOpen(false);
+      setNewLeadData({ contactId: '', value: '', stageId: '' });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConvertToDeal = async (lead: Lead) => {
+    try {
+      const [dealStages, allProperties] = await Promise.all([
+        api.stages.list(),
+        api.properties.list()
+      ]);
+      const initialStage = dealStages.sort((a, b) => a.order - b.order)[0];
+      const defaultProperty = allProperties[0];
+      
+      if (!defaultProperty) {
+        alert("No properties available to link the deal to. Please create a property first.");
+        return;
+      }
+
+      // Create deal
+      await api.deals.create({
+        contactIds: [lead.contactId],
+        value: lead.value,
+        stageId: initialStage.id,
+        propertyIds: [defaultProperty.id],
+      });
+
+      // Delete lead
+      await api.leads.delete(lead.id);
+
+      // Update local state
+      setLeads(prev => prev.filter(l => l.id !== lead.id));
+      
+      alert("Lead converted to deal successfully!");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteLead = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this lead?")) return;
+    try {
+      await api.leads.delete(id);
+      setLeads(prev => prev.filter(l => l.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const activeLead = activeId ? leads.find(l => l.id === activeId) : null;
+
+  return (
+    <div className="h-full flex flex-col space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Leads Pipeline</h1>
+          <p className="text-slate-400 mt-1">Nurture your potential clients.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-1">
+            <button 
+              onClick={() => setView('kanban')}
+              className={cn("p-2 rounded-md transition-all", view === 'kanban' ? "bg-slate-800 text-white shadow-sm" : "text-slate-500 hover:text-slate-300")}
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button 
+              onClick={() => setView('list')}
+              className={cn("p-2 rounded-md transition-all", view === 'list' ? "bg-slate-800 text-white shadow-sm" : "text-slate-500 hover:text-slate-300")}
+            >
+              <ListIcon size={18} />
+            </button>
+          </div>
+          <button 
+            onClick={() => {
+              setNewLeadData(prev => ({ ...prev, stageId: stages[0]?.id || '' }));
+              setIsNewLeadModalOpen(true);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+          >
+            <Plus size={18} /> New Lead
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+          <input 
+            type="text" 
+            placeholder="Filter leads..." 
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          />
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-700 transition-all">
+          <Filter size={16} /> Filters
+        </button>
+      </div>
+
+      {/* Kanban Board */}
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
+          <div className="flex gap-6 h-full min-w-max">
+            {stages.map(stage => (
+              <div key={stage.id} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
+                <div className="p-4 flex justify-between items-center border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-200">{stage.name}</h3>
+                    <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {getLeadsInStage(stage.id).length}
+                    </span>
+                  </div>
+                  <button className="text-slate-500 hover:text-white">
+                    <Plus size={18} />
+                  </button>
+                </div>
+                <SortableContext 
+                  id={stage.id}
+                  items={getLeadsInStage(stage.id).map(l => l.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <DroppableColumn id={stage.id}>
+                    {getLeadsInStage(stage.id).map(lead => (
+                      <SortableLeadCard 
+                        key={lead.id} 
+                        lead={lead} 
+                        contactName={getContactName(lead.contactId)}
+                        onConvert={handleConvertToDeal}
+                        onDelete={handleDeleteLead}
+                      />
+                    ))}
+                    {getLeadsInStage(stage.id).length === 0 && (
+                      <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
+                        No leads here
+                      </div>
+                    )}
+                  </DroppableColumn>
+                </SortableContext>
+              </div>
+            ))}
+          </div>
+        </div>
+        <DragOverlay>
+          {activeLead ? (
+            <div className="bg-slate-800 border border-blue-500 p-4 rounded-xl shadow-2xl w-80 opacity-90">
+              <div className="flex justify-between items-start mb-3">
+                <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
+                  ID: {activeLead.id.slice(0, 4)}
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-white mb-2">
+                {getContactName(activeLead.contactId)}
+              </h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <DollarSign size={14} className="text-emerald-500" />
+                  <span className="font-medium text-slate-200">${activeLead.value?.toLocaleString() || "0"}</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {/* New Lead Modal */}
+      <Modal
+        isOpen={isNewLeadModalOpen}
+        onClose={() => setIsNewLeadModalOpen(false)}
+        title="Create New Lead"
+      >
+        <form onSubmit={handleCreateLead} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Contact</label>
+            <select
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newLeadData.contactId}
+              onChange={(e) => setNewLeadData({ ...newLeadData, contactId: e.target.value })}
+            >
+              <option value="">Select a contact</option>
+              {contacts.map(c => (
+                <option key={c.id} value={c.id}>{c.fullName}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Estimated Value ($)</label>
+            <input
+              type="number"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. 500000"
+              value={newLeadData.value}
+              onChange={(e) => setNewLeadData({ ...newLeadData, value: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Stage</label>
+            <select
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newLeadData.stageId}
+              onChange={(e) => setNewLeadData({ ...newLeadData, stageId: e.target.value })}
+            >
+              {stages.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={() => setIsNewLeadModalOpen(false)}
+              className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-500 disabled:opacity-50 transition-all"
+            >
+              {isSubmitting ? 'Creating...' : 'Create Lead'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
