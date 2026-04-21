@@ -32,7 +32,7 @@ import {
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
-import { Deal, Contact, Activity, Task, Property } from '../types';
+import { Deal, Contact, Activity, Task, Property, User } from '../types';
 import { cn } from '../lib/utils';
 
 export default function DealDetail() {

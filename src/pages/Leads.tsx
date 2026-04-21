@@ -8,7 +8,7 @@ import {
   Filter,
   LayoutGrid,
   List as ListIcon,
-  User,
+  User as UserIcon,
   Briefcase,
   Trash2
 } from 'lucide-react';
@@ -36,7 +36,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { api } from '../lib/api';
-import { Lead, LeadStage, Contact } from '../types';
+import { Lead, LeadStage, Contact, User } from '../types';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
@@ -154,13 +154,29 @@ export default function Leads() {
   const [stages, setStages] = useState<LeadStage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [newLeadData, setNewLeadData] = useState({
     contactId: '',
-    value: '',
-    stageId: ''
+    assignedAgentId: '',
+    stageId: '',
+    preferredCommunity: '',
+    minBudget: '',
+    maxBudget: '',
+    minBeds: '',
+    minBaths: '',
+    minSize: '',
+    preferredPropertyClass: '',
+    preferredBuildingType: '',
+    preferredPropertyStyle: '',
+    preferredGarageType: '',
+    wantsBasement: false,
+    wantsSeparateEntrance: false,
+    maxCondoFees: '',
+    possessionTimeline: '',
+    notes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -184,14 +200,16 @@ export default function Leads() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [s, l, c] = await Promise.all([
+        const [s, l, c, u] = await Promise.all([
           api.leadStages.list(), 
           api.leads.list(),
-          api.contacts.list()
+          api.contacts.list(),
+          api.users.list()
         ]);
         setStages(s.sort((a, b) => a.order - b.order));
         setLeads(l);
         setContacts(c);
+        setUsers(u);
       } catch (err) {
         console.error(err);
       }
@@ -269,12 +287,47 @@ export default function Leads() {
     try {
       const created = await api.leads.create({
         contactId: newLeadData.contactId,
+        assignedAgentId: newLeadData.assignedAgentId || undefined,
         stageId: newLeadData.stageId,
-        value: parseFloat(newLeadData.value) || 0,
+        preferredCommunity: newLeadData.preferredCommunity,
+        minBudget: parseFloat(newLeadData.minBudget) || undefined,
+        maxBudget: parseFloat(newLeadData.maxBudget) || undefined,
+        minBeds: parseInt(newLeadData.minBeds) || undefined,
+        minBaths: parseFloat(newLeadData.minBaths) || undefined,
+        minSize: parseFloat(newLeadData.minSize) || undefined,
+        preferredPropertyClass: newLeadData.preferredPropertyClass,
+        preferredBuildingType: newLeadData.preferredBuildingType,
+        preferredPropertyStyle: newLeadData.preferredPropertyStyle,
+        preferredGarageType: newLeadData.preferredGarageType,
+        wantsBasement: newLeadData.wantsBasement,
+        wantsSeparateEntrance: newLeadData.wantsSeparateEntrance,
+        maxCondoFees: parseFloat(newLeadData.maxCondoFees) || undefined,
+        possessionTimeline: newLeadData.possessionTimeline,
+        notes: newLeadData.notes,
+        value: parseFloat(newLeadData.maxBudget) || 0, // Fallback for UI value
       });
       setLeads(prev => [...prev, created]);
       setIsNewLeadModalOpen(false);
-      setNewLeadData({ contactId: '', value: '', stageId: '' });
+      setNewLeadData({
+        contactId: '',
+        assignedAgentId: '',
+        stageId: '',
+        preferredCommunity: '',
+        minBudget: '',
+        maxBudget: '',
+        minBeds: '',
+        minBaths: '',
+        minSize: '',
+        preferredPropertyClass: '',
+        preferredBuildingType: '',
+        preferredPropertyStyle: '',
+        preferredGarageType: '',
+        wantsBasement: false,
+        wantsSeparateEntrance: false,
+        maxCondoFees: '',
+        possessionTimeline: '',
+        notes: '',
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -545,45 +598,213 @@ export default function Leads() {
         onClose={() => setIsNewLeadModalOpen(false)}
         title="Create New Lead"
       >
-        <form onSubmit={handleCreateLead} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">Contact</label>
-            <select
-              required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={newLeadData.contactId}
-              onChange={(e) => setNewLeadData({ ...newLeadData, contactId: e.target.value })}
-            >
-              <option value="">Select a contact</option>
-              {contacts.map(c => (
-                <option key={c.id} value={c.id}>{c.fullName}</option>
-              ))}
-            </select>
+        <form onSubmit={handleCreateLead} className="space-y-6 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Essential Info */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Core Information</h3>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Primary Contact</label>
+                <select
+                  required
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newLeadData.contactId}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, contactId: e.target.value })}
+                >
+                  <option value="">Select a contact</option>
+                  {contacts.map(c => (
+                    <option key={c.id} value={c.id}>{c.fullName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Assigned Agent</label>
+                <select
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newLeadData.assignedAgentId}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, assignedAgentId: e.target.value })}
+                >
+                  <option value="">Unassigned</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.fullName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Lead Stage</label>
+                <select
+                  required
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newLeadData.stageId}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, stageId: e.target.value })}
+                >
+                  {stages.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Budget & Timeline */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Budget & Timeline</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Min Budget ($)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min"
+                    value={newLeadData.minBudget}
+                    onChange={(e) => setNewLeadData({ ...newLeadData, minBudget: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Max Budget ($)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Max"
+                    value={newLeadData.maxBudget}
+                    onChange={(e) => setNewLeadData({ ...newLeadData, maxBudget: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Possession Timeline</label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. 3-6 months"
+                  value={newLeadData.possessionTimeline}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, possessionTimeline: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Max Condo Fees ($)</label>
+                <input
+                  type="number"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Max monthly fees"
+                  value={newLeadData.maxCondoFees}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, maxCondoFees: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
+
+          <hr className="border-slate-800" />
+
+          {/* Preferences */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Property Preferences</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Preferred Community</label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Beltline, Aspen Woods"
+                  value={newLeadData.preferredCommunity}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, preferredCommunity: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Beds</label>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min"
+                    value={newLeadData.minBeds}
+                    onChange={(e) => setNewLeadData({ ...newLeadData, minBeds: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Baths</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min"
+                    value={newLeadData.minBaths}
+                    onChange={(e) => setNewLeadData({ ...newLeadData, minBaths: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Size (sqft)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min"
+                    value={newLeadData.minSize}
+                    onChange={(e) => setNewLeadData({ ...newLeadData, minSize: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Property Class</label>
+                <select
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newLeadData.preferredPropertyClass}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, preferredPropertyClass: e.target.value })}
+                >
+                  <option value="">No preference</option>
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Industrial">Industrial</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Garage Type</label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Attached Double"
+                  value={newLeadData.preferredGarageType}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, preferredGarageType: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-6 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+                  checked={newLeadData.wantsBasement}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, wantsBasement: e.target.checked })}
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Wants Basement</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+                  checked={newLeadData.wantsSeparateEntrance}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, wantsSeparateEntrance: e.target.checked })}
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Wants Sep. Entrance</span>
+              </label>
+            </div>
+          </div>
+
+          <hr className="border-slate-800" />
+
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">Estimated Value ($)</label>
-            <input
-              type="number"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. 500000"
-              value={newLeadData.value}
-              onChange={(e) => setNewLeadData({ ...newLeadData, value: e.target.value })}
+            <label className="block text-sm font-medium text-slate-400 mb-1">Notes</label>
+            <textarea
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+              placeholder="Enter any additional details about the lead's requirements..."
+              value={newLeadData.notes}
+              onChange={(e) => setNewLeadData({ ...newLeadData, notes: e.target.value })}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">Stage</label>
-            <select
-              required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={newLeadData.stageId}
-              onChange={(e) => setNewLeadData({ ...newLeadData, stageId: e.target.value })}
-            >
-              {stages.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800 sticky bottom-0 bg-slate-900/95 py-4">
             <button
               type="button"
               onClick={() => setIsNewLeadModalOpen(false)}
@@ -594,9 +815,9 @@ export default function Leads() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-500 disabled:opacity-50 transition-all"
+              className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20"
             >
-              {isSubmitting ? 'Creating...' : 'Create Lead'}
+              {isSubmitting ? 'Processing...' : 'Create Lead'}
             </button>
           </div>
         </form>
