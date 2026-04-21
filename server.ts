@@ -117,15 +117,14 @@ async function startServer() {
       { id: 'ls1', name: 'Cold', order: 1 },
       { id: 'ls2', name: 'Warm', order: 2 },
       { id: 'ls3', name: 'Hot', order: 3 },
-      { id: 'ls4', name: 'Not Responding', order: 4 },
-      { id: 'ls5', name: 'Lost', order: 5 },
+      { id: 'ls5', name: 'Lost', order: 4 },
     ],
     leads: [
       { id: 'l1', contactId: 'c1', stageId: 'ls1', value: 500000, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       { id: 'l2', contactId: 'c2', stageId: 'ls2', value: 750000, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ],
     dealStages: [
-      { id: '1', name: 'Lead', order: 1 },
+      { id: '1', name: 'Active Leads', order: 1 },
       { id: '2', name: 'Showing', order: 2 },
       { id: '3', name: 'Offer', order: 3 },
       { id: '4', name: 'Closed', order: 4 },

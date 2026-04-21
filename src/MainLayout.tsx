@@ -66,7 +66,7 @@ export default function MainLayout() {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
     { icon: UserIcon, label: 'Leads', to: '/leads' },
-    { icon: Briefcase, label: 'Deals', to: '/deals' },
+    { icon: Briefcase, label: 'Pipeline', to: '/deals' },
     { icon: Users, label: 'Contacts', to: '/contacts' },
     { icon: Home, label: 'Properties', to: '/properties' },
     { icon: Calendar, label: 'Showings', to: '/showings' },
@@ -144,7 +144,7 @@ export default function MainLayout() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
               <input
                 type="text"
-                placeholder="Search deals, contacts, properties..."
+                placeholder="Search pipeline, contacts, properties..."
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>

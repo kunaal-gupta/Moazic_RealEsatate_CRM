@@ -272,7 +272,7 @@ export default function Deals() {
     <div className="h-full flex flex-col space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Deals Pipeline</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Active Pipeline</h1>
           <p className="text-slate-400 mt-1">Manage your active real estate opportunities.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -297,7 +297,7 @@ export default function Deals() {
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
           >
-            <Plus size={18} /> New Deal
+            <Plus size={18} /> New Entry
           </button>
         </div>
       </div>
@@ -317,70 +317,150 @@ export default function Deals() {
         </button>
       </div>
 
-      {/* Kanban Board */}
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-          <div className="flex gap-6 h-full min-w-max">
-            {stages.map(stage => (
-              <div key={stage.id} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
-                <div className="p-4 flex justify-between items-center border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-200">{stage.name}</h3>
-                    <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {getDealsInStage(stage.id).length}
-                    </span>
+      {/* View Content */}
+      {view === 'kanban' ? (
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
+            <div className="flex gap-6 h-full min-w-max">
+              {stages.map(stage => (
+                <div key={stage.id} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
+                  <div className="p-4 flex justify-between items-center border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-200">{stage.name}</h3>
+                      <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {getDealsInStage(stage.id).length}
+                      </span>
+                    </div>
+                    <button className="text-slate-500 hover:text-white">
+                      <Plus size={18} />
+                    </button>
                   </div>
-                  <button className="text-slate-500 hover:text-white">
-                    <Plus size={18} />
-                  </button>
+                  <SortableContext 
+                    id={stage.id}
+                    items={getDealsInStage(stage.id).map(d => d.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <DroppableColumn id={stage.id}>
+                      {getDealsInStage(stage.id).map(deal => (
+                        <SortableDealCard key={deal.id} deal={deal} />
+                      ))}
+                      {getDealsInStage(stage.id).length === 0 && (
+                        <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
+                          No deals here
+                        </div>
+                      )}
+                    </DroppableColumn>
+                  </SortableContext>
                 </div>
-                <SortableContext 
-                  id={stage.id}
-                  items={getDealsInStage(stage.id).map(d => d.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <DroppableColumn id={stage.id}>
-                    {getDealsInStage(stage.id).map(deal => (
-                      <SortableDealCard key={deal.id} deal={deal} />
-                    ))}
-                    {getDealsInStage(stage.id).length === 0 && (
-                      <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
-                        No deals here
-                      </div>
-                    )}
-                  </DroppableColumn>
-                </SortableContext>
+              ))}
+            </div>
+          </div>
+          <DragOverlay>
+            {activeDeal ? (
+              <div className="bg-slate-800 border border-blue-500 p-4 rounded-xl shadow-2xl w-80 opacity-90">
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
+                    ID: {activeDeal.id.slice(0, 4)}
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white mb-2">
+                  Property Deal #{activeDeal.id.slice(-4)}
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <DollarSign size={14} className="text-emerald-500" />
+                    <span className="font-medium text-slate-200">${activeDeal.value?.toLocaleString() || "0"}</span>
+                  </div>
+                </div>
               </div>
-            ))}
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <div className="flex-1 overflow-hidden bg-slate-900/30 rounded-2xl border border-slate-800">
+          <div className="h-full overflow-y-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 bg-slate-900 z-10">
+                <tr className="border-b border-slate-800">
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Property Deal</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">ID</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Stage</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Value</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Added</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deals.map(deal => {
+                  const stage = stages.find(s => s.id === deal.stageId);
+                  return (
+                    <motion.tr 
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={deal.id} 
+                      className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group"
+                    >
+                      <td className="p-4">
+                        <Link to={`/deals/${deal.id}`} className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-400">
+                            DE
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Property Deal #{deal.id.slice(-4)}</p>
+                            <p className="text-[10px] text-slate-500">Active Pipeline Entry</p>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="text-[10px] font-mono text-slate-500">#{deal.id.slice(0, 4)}</span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={cn(
+                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter",
+                          stage?.name === 'Closed' ? "bg-emerald-500/10 text-emerald-400" :
+                          stage?.name === 'Offer' ? "bg-purple-500/10 text-purple-400" :
+                          stage?.name === 'Showing' ? "bg-blue-500/10 text-blue-400" :
+                          "bg-slate-800 text-slate-400"
+                        )}>
+                          {stage?.name || 'Unknown'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="text-sm font-mono font-bold text-emerald-500">${deal.value?.toLocaleString()}</span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="text-xs text-slate-400">{new Date(deal.createdAt).toLocaleDateString()}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <Link 
+                          to={`/deals/${deal.id}`}
+                          className="text-[10px] font-bold text-blue-400 uppercase tracking-widest hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-lg transition-all"
+                        >
+                          View Detail
+                        </Link>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+                {deals.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center text-slate-500 italic">
+                      No entries found in the pipeline.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-        <DragOverlay>
-          {activeDeal ? (
-            <div className="bg-slate-800 border border-blue-500 p-4 rounded-xl shadow-2xl w-80 opacity-90">
-              <div className="flex justify-between items-start mb-3">
-                <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
-                  ID: {activeDeal.id.slice(0, 4)}
-                </span>
-              </div>
-              <h4 className="text-sm font-bold text-white mb-2">
-                Property Deal #{activeDeal.id.slice(-4)}
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <DollarSign size={14} className="text-emerald-500" />
-                  <span className="font-medium text-slate-200">${activeDeal.value?.toLocaleString() || "0"}</span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      )}
 
       {/* New Deal Modal */}
       <Modal

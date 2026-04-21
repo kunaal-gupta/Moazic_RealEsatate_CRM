@@ -377,76 +377,167 @@ export default function Leads() {
         </button>
       </div>
 
-      {/* Kanban Board */}
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-          <div className="flex gap-6 h-full min-w-max">
-            {stages.map(stage => (
-              <div key={stage.id} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
-                <div className="p-4 flex justify-between items-center border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-200">{stage.name}</h3>
-                    <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {getLeadsInStage(stage.id).length}
-                    </span>
+      {/* View Content */}
+      {view === 'kanban' ? (
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
+            <div className="flex gap-6 h-full min-w-max">
+              {stages.map(stage => (
+                <div key={stage.id} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
+                  <div className="p-4 flex justify-between items-center border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-200">{stage.name}</h3>
+                      <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {getLeadsInStage(stage.id).length}
+                      </span>
+                    </div>
+                    <button className="text-slate-500 hover:text-white">
+                      <Plus size={18} />
+                    </button>
                   </div>
-                  <button className="text-slate-500 hover:text-white">
-                    <Plus size={18} />
-                  </button>
+                  <SortableContext 
+                    id={stage.id}
+                    items={getLeadsInStage(stage.id).map(l => l.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <DroppableColumn id={stage.id}>
+                      {getLeadsInStage(stage.id).map(lead => (
+                        <SortableLeadCard 
+                          key={lead.id} 
+                          lead={lead} 
+                          contactName={getContactName(lead.contactId)}
+                          onConvert={handleConvertToDeal}
+                          onDelete={handleDeleteLead}
+                        />
+                      ))}
+                      {getLeadsInStage(stage.id).length === 0 && (
+                        <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
+                          No leads here
+                        </div>
+                      )}
+                    </DroppableColumn>
+                  </SortableContext>
                 </div>
-                <SortableContext 
-                  id={stage.id}
-                  items={getLeadsInStage(stage.id).map(l => l.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <DroppableColumn id={stage.id}>
-                    {getLeadsInStage(stage.id).map(lead => (
-                      <SortableLeadCard 
-                        key={lead.id} 
-                        lead={lead} 
-                        contactName={getContactName(lead.contactId)}
-                        onConvert={handleConvertToDeal}
-                        onDelete={handleDeleteLead}
-                      />
-                    ))}
-                    {getLeadsInStage(stage.id).length === 0 && (
-                      <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
-                        No leads here
-                      </div>
-                    )}
-                  </DroppableColumn>
-                </SortableContext>
+              ))}
+            </div>
+          </div>
+          <DragOverlay>
+            {activeLead ? (
+              <div className="bg-slate-800 border border-blue-500 p-4 rounded-xl shadow-2xl w-80 opacity-90">
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
+                    ID: {activeLead.id.slice(0, 4)}
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white mb-2">
+                  {getContactName(activeLead.contactId)}
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <DollarSign size={14} className="text-emerald-500" />
+                    <span className="font-medium text-slate-200">${activeLead.value?.toLocaleString() || "0"}</span>
+                  </div>
+                </div>
               </div>
-            ))}
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <div className="flex-1 overflow-hidden bg-slate-900/30 rounded-2xl border border-slate-800">
+          <div className="h-full overflow-y-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 bg-slate-900 z-10">
+                <tr className="border-b border-slate-800">
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lead Name</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">ID</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Stage</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Value</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Created</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.map(lead => {
+                  const stage = stages.find(s => s.id === lead.stageId);
+                  const contactName = getContactName(lead.contactId);
+                  return (
+                    <motion.tr 
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={lead.id} 
+                      className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group"
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-400">
+                            {contactName[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{contactName}</p>
+                            <p className="text-[10px] text-slate-500">Real Estate Opportunity</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="text-[10px] font-mono text-slate-500">#{lead.id.slice(0, 4)}</span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={cn(
+                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter",
+                          stage?.name === 'Hot' ? "bg-red-500/10 text-red-400" :
+                          stage?.name === 'Warm' ? "bg-orange-500/10 text-orange-400" :
+                          stage?.name === 'Cold' ? "bg-blue-500/10 text-blue-400" :
+                          "bg-slate-800 text-slate-400"
+                        )}>
+                          {stage?.name || 'Unknown'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="text-sm font-mono font-bold text-emerald-500">${lead.value?.toLocaleString()}</span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="text-xs text-slate-400">{new Date(lead.createdAt).toLocaleDateString()}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-all"
+                            title="Convert to Deal"
+                            onClick={() => handleConvertToDeal(lead)}
+                          >
+                            <Briefcase size={14} />
+                          </button>
+                          <button 
+                            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                            title="Delete Lead"
+                            onClick={() => handleDeleteLead(lead.id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+                {leads.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center text-slate-500 italic">
+                      No leads found match your criteria.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-        <DragOverlay>
-          {activeLead ? (
-            <div className="bg-slate-800 border border-blue-500 p-4 rounded-xl shadow-2xl w-80 opacity-90">
-              <div className="flex justify-between items-start mb-3">
-                <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
-                  ID: {activeLead.id.slice(0, 4)}
-                </span>
-              </div>
-              <h4 className="text-sm font-bold text-white mb-2">
-                {getContactName(activeLead.contactId)}
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <DollarSign size={14} className="text-emerald-500" />
-                  <span className="font-medium text-slate-200">${activeLead.value?.toLocaleString() || "0"}</span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      )}
 
       {/* New Lead Modal */}
       <Modal
