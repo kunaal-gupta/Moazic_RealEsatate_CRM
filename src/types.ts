@@ -98,7 +98,7 @@ export interface Lead {
   contactId: string;
   assignedAgentId?: string;
   stageId: string;
-  preferredCommunity?: string;
+  preferredCommunity?: string[];
   minBudget?: number;
   maxBudget?: number;
   minBeds?: number;
@@ -107,14 +107,12 @@ export interface Lead {
   preferredPropertyClass?: string;
   preferredBuildingType?: string;
   preferredPropertyStyle?: string;
-  preferredGarageType?: string;
+  preferredGarageType?: string[];
   wantsBasement?: boolean;
   wantsSeparateEntrance?: boolean;
   maxCondoFees?: number;
   possessionTimeline?: string;
-  status?: string;
   notes?: string;
-  value?: number; // legacy/derived
   createdAt: string;
   updatedAt: string;
 }

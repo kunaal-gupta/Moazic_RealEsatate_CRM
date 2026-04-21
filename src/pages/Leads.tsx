@@ -10,7 +10,9 @@ import {
   List as ListIcon,
   User as UserIcon,
   Briefcase,
-  Trash2
+  Trash2,
+  MapPin,
+  Car
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -40,6 +42,47 @@ import { Lead, LeadStage, Contact, User } from '../types';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
+import MultiSelect from '../components/MultiSelect';
+
+const COMMUNITIES = [
+  { id: 'keswick', name: 'Keswick' },
+  { id: 'glenridding_heights', name: 'Glenridding Heights' },
+  { id: 'glenridding_ravines', name: 'Glenridding Ravine' },
+  { id: 'stillwater', name: 'Stillwater' },
+  { id: 'edgemont', name: 'Edgemont' },
+  { id: 'river_edge', name: 'River Edge' },
+  { id: 'upland', name: 'Upland' },
+  { id: 'rosenthal', name: 'Rosenthal' },
+  { id: 'secord', name: 'Secord' },
+  { id: 'kinglet', name: 'Kinglet Gardens' },
+  { id: 'trumpeter', name: 'Trumpeter Area' },
+  { id: 'starling', name: 'Starling' },
+  { id: 'hawksridge', name: 'Hawks Ridge' },
+  { id: 'alces', name: 'Alces' },
+  { id: 'meltwater', name: 'Meltwater' },
+  { id: 'mattson', name: 'Mattson' },
+  { id: 'orchards', name: 'The Orchards At Ellerslie' },
+  { id: 'walker', name: 'Walker' },
+  { id: 'erin_ridge', name: 'Erin Ridge' },
+  { id: 'nouveau', name: 'Nouveau' },
+  { id: 'jensen_lakes', name: 'Jensen Lakes' },
+  { id: 'cherot', name: 'Cherot' },
+  { id: 'riverside', name: 'Riverside' },
+  { id: 'cambrian', name: 'Cambrian' },
+  { id: 'hearthstone', name: 'Hearthstone (Strathcona)' },
+  { id: 'hillshire', name: 'Hillshire' },
+];
+
+const GARAGE_TYPES = [
+  { id: 'double_attached', name: 'Double Garage Attached' },
+  { id: 'double_detached', name: 'Double Garage Detached' },
+  { id: 'single_attached', name: 'Single Garage Attached' },
+  { id: 'single_detached', name: 'Single Garage Detached' },
+  { id: 'triple_attached', name: 'Triple Garage Attached' },
+  { id: 'triple_detached', name: 'Triple Garage Detached' },
+  { id: 'no_garage_surface', name: 'No garage - Surface' },
+  { id: 'no_garage_parking_pad', name: 'No garage - parking pad' },
+];
 
 const SortableLeadCard: React.FC<{ 
   lead: Lead, 
@@ -67,16 +110,24 @@ const SortableLeadCard: React.FC<{
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <div 
-        className="bg-slate-800 border border-slate-700 p-4 rounded-xl mb-3 cursor-grab active:cursor-grabbing hover:border-blue-500/50 transition-all group relative"
+        className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 p-5 rounded-2xl mb-4 cursor-grab active:cursor-grabbing hover:border-blue-500/50 transition-all group relative shadow-lg shadow-black/20"
         style={{ touchAction: 'none' }}
       >
-        <div className="flex justify-between items-start mb-3">
-          <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
-            ID: {lead.id.slice(0, 4)}
-          </span>
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/10">
+              #{lead.id.slice(0, 4)}
+            </span>
+            {lead.preferredCommunity && lead.preferredCommunity.length > 0 && (
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-800 px-2 py-0.5 rounded border border-slate-700/50">
+                {COMMUNITIES.find(c => c.id === lead.preferredCommunity?.[0])?.name}
+                {lead.preferredCommunity.length > 1 && ` +${lead.preferredCommunity.length - 1}`}
+              </span>
+            )}
+          </div>
           <div className="relative">
             <button 
-              className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-700 transition-colors" 
+              className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors" 
               onClick={(e) => { 
                 e.preventDefault(); 
                 e.stopPropagation(); 
@@ -86,9 +137,9 @@ const SortableLeadCard: React.FC<{
               <MoreHorizontal size={16} />
             </button>
             {showMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-10 py-1 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-48 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-20 py-1.5 backdrop-blur-xl bg-opacity-95 overflow-hidden">
                 <button
-                  className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-blue-500/10 hover:text-blue-400 flex items-center gap-2 transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -96,11 +147,12 @@ const SortableLeadCard: React.FC<{
                     setShowMenu(false);
                   }}
                 >
-                  <Briefcase size={14} className="text-blue-400" />
+                  <Briefcase size={14} />
                   Convert to Deal
                 </button>
+                <div className="h-px bg-slate-800 mx-2 my-1" />
                 <button
-                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -115,25 +167,65 @@ const SortableLeadCard: React.FC<{
             )}
           </div>
         </div>
-        <h4 className="text-sm font-bold text-white mb-2 group-hover:text-blue-400 transition-all">
+
+        <h4 className="text-base font-bold text-white mb-3 group-hover:text-blue-400 transition-all">
           {contactName}
         </h4>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <DollarSign size={14} className="text-emerald-500" />
-            <span className="font-medium text-slate-200">${lead.value?.toLocaleString() || "0"}</span>
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Budget Range</span>
+            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono font-bold">
+              <DollarSign size={12} className="opacity-70" />
+              <span>
+                {lead.maxBudget ? `$${(lead.maxBudget / 1000).toFixed(0)}k` : 'N/A'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <Calendar size={14} />
-            <span>Added {new Date(lead.createdAt).toLocaleDateString()}</span>
+
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Timeline</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-300">
+              <Calendar size={12} className="opacity-70" />
+              <span className="truncate">{lead.possessionTimeline || 'Flexible'}</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Property Specs</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+              <span className="text-white font-bold">{lead.minBeds || 0}</span>B
+              <span className="opacity-30">•</span>
+              <span className="text-white font-bold">{lead.minBaths || 0}</span>Ba
+              <span className="opacity-30">•</span>
+              <span className="text-white font-bold">{lead.minSize ? `${(lead.minSize / 1000).toFixed(1)}k` : '0'}</span>sqft
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Garage Req.</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+              <Car size={12} className="opacity-70" />
+              <span className="truncate">
+                {lead.preferredGarageType && lead.preferredGarageType.length > 0 
+                  ? GARAGE_TYPES.find(gt => gt.id === lead.preferredGarageType?.[0])?.name.split(' ')[0] 
+                  : 'Any'}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-700 flex justify-between items-center">
+
+        <div className="mt-5 pt-4 border-t border-slate-800/50 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">
+            <div className="w-6 h-6 rounded-lg bg-blue-600/20 border border-blue-500/20 flex items-center justify-center text-[10px] font-bold text-blue-400">
               {contactName[0]}
             </div>
-            <span className="text-[10px] text-slate-400 font-medium">Lead Contact</span>
+            <span className="text-[10px] text-slate-500 font-medium">Added {new Date(lead.createdAt).toLocaleDateString()}</span>
+          </div>
+          <div className="flex -space-x-1.5">
+             <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                <UserIcon size={10} className="text-slate-500" />
+             </div>
           </div>
         </div>
       </div>
@@ -162,7 +254,7 @@ export default function Leads() {
     contactId: '',
     assignedAgentId: '',
     stageId: '',
-    preferredCommunity: '',
+    preferredCommunity: [] as string[],
     minBudget: '',
     maxBudget: '',
     minBeds: '',
@@ -171,7 +263,7 @@ export default function Leads() {
     preferredPropertyClass: '',
     preferredBuildingType: '',
     preferredPropertyStyle: '',
-    preferredGarageType: '',
+    preferredGarageType: [] as string[],
     wantsBasement: false,
     wantsSeparateEntrance: false,
     maxCondoFees: '',
@@ -304,7 +396,6 @@ export default function Leads() {
         maxCondoFees: parseFloat(newLeadData.maxCondoFees) || undefined,
         possessionTimeline: newLeadData.possessionTimeline,
         notes: newLeadData.notes,
-        value: parseFloat(newLeadData.maxBudget) || 0, // Fallback for UI value
       });
       setLeads(prev => [...prev, created]);
       setIsNewLeadModalOpen(false);
@@ -312,7 +403,7 @@ export default function Leads() {
         contactId: '',
         assignedAgentId: '',
         stageId: '',
-        preferredCommunity: '',
+        preferredCommunity: [],
         minBudget: '',
         maxBudget: '',
         minBeds: '',
@@ -321,7 +412,7 @@ export default function Leads() {
         preferredPropertyClass: '',
         preferredBuildingType: '',
         preferredPropertyStyle: '',
-        preferredGarageType: '',
+        preferredGarageType: [],
         wantsBasement: false,
         wantsSeparateEntrance: false,
         maxCondoFees: '',
@@ -352,7 +443,7 @@ export default function Leads() {
       // Create deal
       await api.deals.create({
         contactIds: [lead.contactId],
-        value: lead.value,
+        value: lead.maxBudget || 0,
         stageId: initialStage.id,
         propertyIds: [defaultProperty.id],
       });
@@ -488,13 +579,16 @@ export default function Leads() {
                     ID: {activeLead.id.slice(0, 4)}
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-white mb-2">
+                <h4 className="text-base font-bold text-white mb-3">
                   {getContactName(activeLead.contactId)}
                 </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <DollarSign size={14} className="text-emerald-500" />
-                    <span className="font-medium text-slate-200">${activeLead.value?.toLocaleString() || "0"}</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Budget Max</span>
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono font-bold">
+                      <DollarSign size={12} className="opacity-70" />
+                      <span>{activeLead.maxBudget ? `$${activeLead.maxBudget.toLocaleString()}` : 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -508,9 +602,10 @@ export default function Leads() {
               <thead className="sticky top-0 bg-slate-900 z-10">
                 <tr className="border-b border-slate-800">
                   <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lead Name</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">ID</th>
                   <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Stage</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Value</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Community</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Criteria</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Budget</th>
                   <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Created</th>
                   <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
                 </tr>
@@ -534,12 +629,9 @@ export default function Leads() {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{contactName}</p>
-                            <p className="text-[10px] text-slate-500">Real Estate Opportunity</p>
+                            <p className="text-[10px] text-slate-500">ID: #{lead.id.slice(0, 4)}</p>
                           </div>
                         </div>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="text-[10px] font-mono text-slate-500">#{lead.id.slice(0, 4)}</span>
                       </td>
                       <td className="p-4 text-center">
                         <span className={cn(
@@ -552,8 +644,30 @@ export default function Leads() {
                           {stage?.name || 'Unknown'}
                         </span>
                       </td>
+                      <td className="p-4 text-center">
+                        <span className="text-xs text-slate-300 font-medium">
+                          {lead.preferredCommunity && lead.preferredCommunity.length > 0 
+                            ? (lead.preferredCommunity.length === 1 
+                                ? COMMUNITIES.find(c => c.id === lead.preferredCommunity?.[0])?.name
+                                : `${COMMUNITIES.find(c => c.id === lead.preferredCommunity?.[0])?.name} (+${lead.preferredCommunity.length - 1})`)
+                            : '-'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] text-slate-400">
+                            {lead.minBeds || 0}b / {lead.minBaths || 0}ba
+                          </span>
+                          {lead.minSize && <span className="text-[10px] text-slate-500">{lead.minSize} sqft</span>}
+                        </div>
+                      </td>
                       <td className="p-4 text-right">
-                        <span className="text-sm font-mono font-bold text-emerald-500">${lead.value?.toLocaleString()}</span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-mono font-bold text-emerald-500">
+                            ${lead.maxBudget?.toLocaleString()}
+                          </span>
+                          {lead.minBudget && <span className="text-[10px] text-slate-500">From ${lead.minBudget.toLocaleString()}</span>}
+                        </div>
                       </td>
                       <td className="p-4 text-center">
                         <span className="text-xs text-slate-400">{new Date(lead.createdAt).toLocaleDateString()}</span>
@@ -699,14 +813,13 @@ export default function Leads() {
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Property Preferences</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Preferred Community</label>
-                <input
-                  type="text"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. Beltline, Aspen Woods"
-                  value={newLeadData.preferredCommunity}
-                  onChange={(e) => setNewLeadData({ ...newLeadData, preferredCommunity: e.target.value })}
+              <div className="space-y-4">
+                <MultiSelect 
+                  label="Preferred Communities"
+                  placeholder="Search communities..."
+                  options={COMMUNITIES}
+                  selectedIds={newLeadData.preferredCommunity}
+                  onChange={(ids) => setNewLeadData({ ...newLeadData, preferredCommunity: ids })}
                 />
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -759,15 +872,25 @@ export default function Leads() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Garage Type</label>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Building Type</label>
                 <input
                   type="text"
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. Attached Double"
-                  value={newLeadData.preferredGarageType}
-                  onChange={(e) => setNewLeadData({ ...newLeadData, preferredGarageType: e.target.value })}
+                  placeholder="e.g. Detached, Apartment"
+                  value={newLeadData.preferredBuildingType}
+                  onChange={(e) => setNewLeadData({ ...newLeadData, preferredBuildingType: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MultiSelect 
+                label="Preferred Garage Types"
+                placeholder="Select garage options..."
+                options={GARAGE_TYPES}
+                selectedIds={newLeadData.preferredGarageType}
+                onChange={(ids) => setNewLeadData({ ...newLeadData, preferredGarageType: ids })}
+              />
             </div>
 
             <div className="flex gap-6 pt-2">
