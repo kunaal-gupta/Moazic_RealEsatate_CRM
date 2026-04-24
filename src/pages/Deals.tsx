@@ -466,19 +466,21 @@ export default function Deals() {
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="flex-1 overflow-hidden bg-slate-900/30 rounded-2xl border border-slate-800">
-          <div className="h-full overflow-y-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-slate-900 z-10">
-                <tr className="border-b border-slate-800">
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Assigned Agent</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Properties</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Created</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Updated</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contacts</th>
+        <div className="flex-1 overflow-hidden bg-slate-900/50 rounded-2xl border border-slate-800">
+          <div className="h-full overflow-y-auto overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead className="sticky top-0 bg-slate-800/80 backdrop-blur-sm z-10">
+                <tr className="border-b border-slate-700">
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Assigned Agent</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Properties</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Value</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Created</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Updated</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Contacts</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-800/50">
                 {filteredDeals.map(deal => {
                   const stage = stages.find(s => s.id === deal.stageId);
                   const assignedAgent = users.find(u => u.id === deal.assignedAgentId);
@@ -495,23 +497,27 @@ export default function Deals() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       key={deal.id} 
-                      className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group"
+                      className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
+                      onClick={() => navigate(`/deals/${deal.id}`)}
                     >
-                      <td className="p-4 text-white text-sm">
+                      <td className="px-6 py-4 text-white text-sm">
                         {assignedAgent?.fullName || 'Unassigned'}
                       </td>
-                      <td className="p-4 text-slate-300 text-sm">
+                      <td className="px-6 py-4 text-slate-300 text-sm">
                         {dealProperties.map(p => p.address).join(', ')}
                       </td>
-                      <td className="p-4 text-slate-400 text-xs">
+                      <td className="px-6 py-4 text-emerald-400 font-bold text-right font-mono text-sm">
+                        ${deal.value?.toLocaleString() || "0"}
+                      </td>
+                      <td className="px-6 py-4 text-slate-400 text-xs">
                         {new Date(deal.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="p-4 text-slate-400 text-xs">
+                      <td className="px-6 py-4 text-slate-400 text-xs">
                         {new Date(deal.updatedAt).toLocaleDateString()}
                       </td>
-                      <td className="p-4">
+                      <td className="px-6 py-4">
                         <div className="flex gap-1">
-                          {dealContacts.map(contact => (
+                          {dealContacts.slice(0, 3).map(contact => (
                             <div 
                               key={contact.id} 
                               className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white font-bold"
@@ -520,14 +526,22 @@ export default function Deals() {
                               {getInitials(contact.fullName)}
                             </div>
                           ))}
+                          {dealContacts.length > 3 && (
+                            <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-white font-bold">
+                              +{dealContacts.length - 3}
+                            </div>
+                          )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-slate-300 uppercase tracking-wider text-[10px]">
+                        {stage?.name || 'Unknown'}
                       </td>
                     </motion.tr>
                   );
                 })}
                 {filteredDeals.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center text-slate-500 italic">
+                    <td colSpan={7} className="p-12 text-center text-slate-500 italic">
                       No entries found in the pipeline.
                     </td>
                   </tr>

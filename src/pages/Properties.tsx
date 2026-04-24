@@ -17,9 +17,12 @@ import {
   Car,
   DoorOpen,
   CheckCircle2,
-  History
+  List,
+  LayoutGrid,
+  History,
+  ChevronDown
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { Property } from '../types';
 
@@ -28,6 +31,7 @@ export default function Properties() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [newProperty, setNewProperty] = useState<Partial<Property>>({
     address: '',
     community: '',
@@ -101,84 +105,179 @@ export default function Properties() {
             className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
           />
         </div>
+        <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white transition-colors'}`}
+          >
+            <LayoutGrid size={16} />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white transition-colors'}`}
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProperties.map((property) => (
-          <motion.div
-            key={property.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden group hover:border-blue-500/50 transition-all cursor-pointer"
-            onClick={() => setSelectedProperty(property)}
-          >
-            <div className="relative h-48 overflow-hidden">
-              <img 
-                src={`https://picsum.photos/seed/${property.id}/800/600`} 
-                alt={property.address}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute top-4 left-4">
-                <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">
-                  {property.isOurInventory ? 'Our Inventory' : 'External'}
-                </span>
-              </div>
-              <div className="absolute bottom-4 right-4">
-                <div className="bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-700 flex items-center gap-1">
-                  <DollarSign size={14} className="text-emerald-500" />
-                  <span className="text-sm font-bold text-white">${property.price?.toLocaleString()}</span>
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProperties.map((property) => (
+            <motion.div
+              key={property.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden group hover:border-blue-500/50 transition-all cursor-pointer"
+              onClick={() => setSelectedProperty(property)}
+            >
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={`https://picsum.photos/seed/${property.id}/800/600`} 
+                  alt={property.address}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">
+                    {property.isOurInventory ? 'Our Inventory' : 'External'}
+                  </span>
                 </div>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">{property.address}</h3>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs mt-1">
-                    <MapPin size={12} />
-                    {property.community}
+                <div className="absolute bottom-4 right-4">
+                  <div className="bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-700 flex items-center gap-1">
+                    <DollarSign size={14} className="text-emerald-500" />
+                    <span className="text-sm font-bold text-white">${property.price?.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
+              
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">{property.address}</h3>
+                    <div className="flex items-center gap-1 text-slate-400 text-xs mt-1">
+                      <MapPin size={12} />
+                      {property.community}
+                    </div>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-800">
-                <div className="flex flex-col items-center gap-1">
-                  <Bed size={16} className="text-slate-500" />
-                  <span className="text-sm font-bold text-slate-200">{property.beds} Beds</span>
+                <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-800">
+                  <div className="flex flex-col items-center gap-1">
+                    <Bed size={16} className="text-slate-500" />
+                    <span className="text-sm font-bold text-slate-200">{property.beds} Beds</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1 border-x border-slate-800">
+                    <Bath size={16} className="text-slate-500" />
+                    <span className="text-sm font-bold text-slate-200">{property.baths} Baths</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <Maximize size={16} className="text-slate-500" />
+                    <span className="text-sm font-bold text-slate-200">{property.size} sqft</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center gap-1 border-x border-slate-800">
-                  <Bath size={16} className="text-slate-500" />
-                  <span className="text-sm font-bold text-slate-200">{property.baths} Baths</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Maximize size={16} className="text-slate-500" />
-                  <span className="text-sm font-bold text-slate-200">{property.size} sqft</span>
+
+                <div className="mt-6 flex gap-3">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedProperty(property);
+                    }}
+                    className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-all"
+                  >
+                    View Details
+                  </button>
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all"
+                  >
+                    <Plus size={18} />
+                  </button>
                 </div>
               </div>
-
-              <div className="mt-6 flex gap-3">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedProperty(property);
-                  }}
-                  className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-all"
-                >
-                  View Details
-                </button>
-                <button 
-                  onClick={(e) => e.stopPropagation()}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all"
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-800/20 text-xs uppercase tracking-widest text-slate-400">
+                  <th className="p-4 font-bold">Property</th>
+                  <th className="p-4 font-bold">Price</th>
+                  <th className="p-4 font-bold">Specs</th>
+                  <th className="p-4 font-bold">Builder</th>
+                  <th className="p-4 font-bold">Status</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {filteredProperties.map((property) => (
+                  <tr 
+                    key={property.id}
+                    onClick={() => setSelectedProperty(property)}
+                    className="group hover:bg-slate-800/30 transition-colors cursor-pointer"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-700">
+                          <img 
+                            src={`https://picsum.photos/seed/${property.id}/100/100`} 
+                            alt={property.address}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{property.address}</div>
+                          <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                            <MapPin size={10} />
+                            {property.community}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="font-bold text-emerald-400">
+                        ${property.price?.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3 text-sm text-slate-300 whitespace-nowrap">
+                        <span className="flex items-center gap-1"><Bed size={14} className="text-slate-500" /> {property.beds || '-'}</span>
+                        <span className="flex items-center gap-1"><Bath size={14} className="text-slate-500" /> {property.baths || '-'}</span>
+                        <span className="flex items-center gap-1"><Maximize size={14} className="text-slate-500" /> {property.size || '-'} {property.size ? 'sqft' : ''}</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="text-sm text-slate-300">{property.builder || '-'}</div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded ${property.isOurInventory ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                        {property.isOurInventory ? 'Internal' : 'External'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProperty(property);
+                          }}
+                          className="px-3 py-1.5 hover:bg-slate-700 text-blue-400 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          Details
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {filteredProperties.length === 0 && (
         <div className="text-center py-20">
@@ -252,11 +351,7 @@ export default function Properties() {
                   </div>
 
                   {/* Property Details Grid */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                      <Home size={18} className="text-blue-400" />
-                      Property Specifications
-                    </h3>
+                  <CollapsibleSection title="Property Specifications" icon={<Home size={18} />}>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-8">
                       <DetailItem label="Builder" value={selectedProperty.builder} icon={<Building2 size={14} />} />
                       <DetailItem label="Year Built" value={selectedProperty.yearBuilt} icon={<Calendar size={14} />} />
@@ -269,14 +364,10 @@ export default function Properties() {
                       <DetailItem label="Occupancy" value={selectedProperty.occupancy} icon={<DoorOpen size={14} />} />
                       <DetailItem label="Condo Fees" value={selectedProperty.condoFees ? `$${selectedProperty.condoFees}` : 'N/A'} icon={<DollarSign size={14} />} />
                     </div>
-                  </div>
+                  </CollapsibleSection>
 
                   {/* Interior & Exterior */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                      <Warehouse size={18} className="text-blue-400" />
-                      Interior & Exterior Features
-                    </h3>
+                  <CollapsibleSection title="Interior & Exterior Features" icon={<Warehouse size={18} />}>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-8">
                       <DetailItem label="Flooring" value={selectedProperty.flooring} icon={<Layers size={14} />} />
                       <DetailItem label="Garage Type" value={selectedProperty.garageType} icon={<Car size={14} />} />
@@ -286,7 +377,7 @@ export default function Properties() {
                       <DetailItem label="Appliances" value={selectedProperty.appliancesIncluded ? 'Included' : 'Not Included'} icon={<CheckCircle2 size={14} />} />
                       <DetailItem label="Separate Entrance" value={selectedProperty.separateEntrance ? 'Yes' : 'No'} icon={<DoorOpen size={14} />} />
                     </div>
-                  </div>
+                  </CollapsibleSection>
                 </div>
 
                 <div className="space-y-6">
@@ -469,6 +560,41 @@ function DetailItem({ label, value, icon }: { label: string, value: any, icon: R
         <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</div>
         <div className="text-sm text-slate-200 font-medium">{value || 'N/A'}</div>
       </div>
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, icon, children, defaultOpen = true }: { title: string, icon: React.ReactNode, children: React.ReactNode, defaultOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-slate-800/20 border border-slate-800 rounded-2xl overflow-hidden">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center p-6 text-lg font-bold text-white hover:bg-slate-800/40 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <div className="text-blue-400">{icon}</div>
+          {title}
+        </div>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="text-slate-500">
+          <ChevronDown size={20} />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="p-6 pt-0">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

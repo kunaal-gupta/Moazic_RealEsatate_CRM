@@ -122,6 +122,7 @@ const SortableLeadCard: React.FC<{
 
   const [showMenu, setShowMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPropertiesExpanded, setIsPropertiesExpanded] = useState(false);
 
   const communitiesLabel = lead.preferredCommunity?.length 
     ? (lead.preferredCommunity.length > 2 
@@ -267,26 +268,38 @@ const SortableLeadCard: React.FC<{
 
            {leadProperties.length > 0 && (
              <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
-                <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Matched Properties</p>
-                <div className="flex flex-col gap-2">
-                  {leadProperties.map((p: any) => (
-                    <div key={p.id} className="flex flex-col p-2.5 rounded-lg bg-slate-950/50 border border-white/5 hover:border-blue-500/30 transition-colors">
-                      <div className="flex items-start justify-between">
-                         <span className="text-xs font-bold text-slate-200">{p.address}</span>
-                         <span className="text-[10px] font-mono text-emerald-400 font-bold">${p.price?.toLocaleString() || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
-                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-white/5">
-                           <Home size={10} />
-                           <span>{p.beds || 0} Beds / {p.baths || 0} Baths</span>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setIsPropertiesExpanded(!isPropertiesExpanded); }}
+                  className="w-full flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
+                >
+                  Matched Properties ({leadProperties.length})
+                  <ChevronDown size={14} className={cn("transition-transform duration-300", isPropertiesExpanded && "rotate-180")} />
+                </button>
+                {isPropertiesExpanded && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    className="flex flex-col gap-2 overflow-hidden"
+                  >
+                    {leadProperties.map((p: any) => (
+                      <div key={p.id} className="flex flex-col p-2.5 rounded-lg bg-slate-950/50 border border-white/5 hover:border-blue-500/30 transition-colors">
+                        <div className="flex items-start justify-between">
+                           <span className="text-xs font-bold text-slate-200">{p.address}</span>
+                           <span className="text-[10px] font-mono text-emerald-400 font-bold">${p.price?.toLocaleString() || 'N/A'}</span>
                         </div>
-                        <div className="px-1.5 py-0.5 rounded bg-white/5">
-                          {p.community}
+                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
+                          <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-white/5">
+                             <Home size={10} />
+                             <span>{p.beds || 0} Beds / {p.baths || 0} Baths</span>
+                          </div>
+                          <div className="px-1.5 py-0.5 rounded bg-white/5">
+                            {p.community}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </motion.div>
+                )}
              </div>
            )}
         </div>
@@ -814,33 +827,33 @@ export default function Leads() {
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="flex-1 overflow-hidden bg-white/[0.01] rounded-3xl border border-white/5">
-          <div className="h-full overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-hidden bg-slate-900/50 rounded-2xl border border-slate-800">
+          <div className="h-full overflow-y-auto overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[1000px]">
-              <thead className="sticky top-0 bg-slate-950 z-10">
-                <tr className="border-b border-white/5">
-                  <th className="p-4 w-10">
+              <thead className="sticky top-0 bg-slate-800/80 backdrop-blur-sm z-10">
+                <tr className="border-b border-slate-700">
+                  <th className="px-6 py-4 w-10">
                     <div 
                       className={cn(
                         "w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer",
-                        selectedLeadIds.length === leads.length && leads.length > 0 ? "bg-blue-500 border-blue-500" : "bg-slate-950 border-white/10"
+                        selectedLeadIds.length === leads.length && leads.length > 0 ? "bg-blue-500 border-blue-500" : "bg-slate-800 border-slate-600"
                       )}
                       onClick={() => toggleSelectAll(selectedLeadIds.length !== leads.length)}
                     >
                       {selectedLeadIds.length === leads.length && leads.length > 0 && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                     </div>
                   </th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Lead Name</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Status</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Budget Range</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Regions</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Specs</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Timeline</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Associate</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Operations</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Lead Name</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Budget Range</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Regions</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Specs</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Timeline</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Associate</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Operations</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-800/50">
                 {leads.map(lead => {
                   const stage = stages.find(s => s.id === lead.stageId);
                   const agent = users.find(u => u.id === lead.assignedAgentId);
@@ -858,23 +871,23 @@ export default function Leads() {
                       animate={{ opacity: 1 }}
                       key={lead.id} 
                       className={cn(
-                        "border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group cursor-pointer",
+                        "hover:bg-slate-800/30 transition-all group cursor-pointer",
                         selectedLeadIds.includes(lead.id) && "bg-blue-500/5"
                       )}
                       onClick={() => navigate(`/leads/${lead.id}`)}
                     >
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <div 
                           className={cn(
                             "w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer",
-                            selectedLeadIds.includes(lead.id) ? "bg-blue-500 border-blue-500" : "bg-slate-950 border-white/10"
+                            selectedLeadIds.includes(lead.id) ? "bg-blue-500 border-blue-500" : "bg-slate-800 border-slate-600"
                           )}
                           onClick={() => toggleSelectLead(lead.id, !selectedLeadIds.includes(lead.id))}
                         >
                           {selectedLeadIds.includes(lead.id) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-blue-600/10 flex items-center justify-center text-[10px] font-bold text-blue-500 border border-blue-500/10">
                             <UserIcon size={14} />
@@ -885,9 +898,9 @@ export default function Leads() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         <span className={cn(
-                          "px-2 py-0.5 rounded-lg text-xs font-bold uppercase tracking-widest border inline-block ring-1 ring-inset ring-white/5",
+                          "px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border inline-block",
                           stage?.name === 'Hot' ? "bg-red-500/10 text-red-500 border-red-500/20" :
                           stage?.name === 'Warm' ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
                           stage?.name === 'Cold' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
@@ -896,36 +909,36 @@ export default function Leads() {
                           {stage?.name || 'Lead'}
                         </span>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         <span className="text-xs font-mono font-bold text-emerald-500">
                           {lead.minBudget ? `$${(lead.minBudget/1000).toFixed(0)}k` : '0'}–{lead.maxBudget ? `$${(lead.maxBudget/1000).toFixed(0)}k` : '--'}
                         </span>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         <span className="text-xs font-bold text-slate-400">
                           {communitiesLabel}
                         </span>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center">
                            <span className="text-xs font-bold text-slate-300 whitespace-nowrap">{lead.minBeds || 0} Beds / {lead.minBaths || 0} Baths</span>
                            <span className="text-xs font-bold text-slate-600 uppercase tracking-tighter">{lead.preferredPropertyClass || 'Resi'}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         <span className="text-xs font-bold text-slate-600 uppercase tracking-tighter">{lead.possessionTimeline || 'Flexible'}</span>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                          <div className="flex items-center justify-center gap-2">
-                           <div className="w-5 h-5 rounded bg-indigo-500/10 flex items-center justify-center text-[10px] font-bold text-indigo-400 border border-indigo-500/10">
-                             <ShieldCheck size={10} />
+                           <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-slate-400">
+                             <UserCheck size={12} />
                            </div>
-                           <span className="text-[10px] text-slate-500 font-bold truncate max-w-[80px]">
+                           <span className="text-xs text-slate-400 font-medium truncate max-w-[80px]">
                              {agent?.fullName || 'Unassigned'}
                            </span>
                          </div>
                       </td>
-                      <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                           <button 
                             className="p-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
