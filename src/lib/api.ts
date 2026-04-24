@@ -1,4 +1,4 @@
-import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage, EmailTemplate, Email, Lead, LeadStage } from '../types';
+import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage, EmailTemplate, Email, Lead, LeadStage, LeadNote, LeadHistory } from '../types';
 
 const API_BASE = '/api';
 
@@ -11,9 +11,20 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
     },
   });
   if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
+    let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData && errorData.error) {
+        errorMessage = errorData.error;
+      }
+    } catch (e) {
+      // Ignore if error response is not JSON
+    }
+    throw new Error(errorMessage);
   }
-  return response.json();
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : {} as T;
 }
 
 export const api = {
@@ -38,9 +49,17 @@ export const api = {
   },
   leads: {
     list: () => fetcher<Lead[]>('/leads'),
+    get: (id: string) => fetcher<Lead>(`/leads/${id}`),
     create: (data: Partial<Lead>) => fetcher<Lead>('/leads', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Lead>) => fetcher<Lead>(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher<void>(`/leads/${id}`, { method: 'DELETE' }),
+  },
+  leadNotes: {
+    list: (leadId: string) => fetcher<LeadNote[]>(`/leadNotes?leadId=${leadId}`),
+    create: (data: Partial<LeadNote>) => fetcher<LeadNote>(`/leadNotes`, { method: 'POST', body: JSON.stringify(data) }),
+  },
+  leadHistory: {
+    list: (leadId: string) => fetcher<LeadHistory[]>(`/leadHistory?leadId=${leadId}`),
   },
   stages: {
     list: () => fetcher<DealStage[]>('/dealStages'),

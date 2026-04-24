@@ -98,6 +98,7 @@ export interface Lead {
   contactId: string;
   assignedAgentId?: string;
   stageId: string;
+  propertyIds?: string[];
   preferredCommunity?: string[];
   minBudget?: number;
   maxBudget?: number;
@@ -115,6 +116,22 @@ export interface Lead {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LeadNote {
+  id: string;
+  leadId: string;
+  note: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadHistory {
+  id: string;
+  leadId: string;
+  stageId: string;
+  changedAt: string;
 }
 
 export interface Activity {
@@ -141,9 +158,10 @@ export interface Task {
 
 export interface Showing {
   id: string;
-  propertyId: string;
+  propertyIds: string[];
   dealId: string;
   scheduledAt: string;
+  endScheduledAt: string;
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
   participantIds: string[];

@@ -83,15 +83,107 @@ async function startServer() {
         separateEntrance: false,
         notes: 'Great location near schools. Needs some minor kitchen updates.',
         addedDate: new Date().toISOString()
+      },
+      { 
+        id: 'p3', 
+        address: '789 Birch Dr', 
+        community: 'Oak Ridge', 
+        beds: 5, 
+        baths: 4, 
+        size: 3200, 
+        price: 1100000, 
+        isOurInventory: false,
+        builder: 'Luxury Homes Inc',
+        yearBuilt: 2023,
+        propertyClass: 'Residential',
+        buildingType: 'Detached',
+        style: 'Contemporary',
+        model: 'The Estates',
+        blockLot: 'B12-L5',
+        legalPlan: 'PL-9988',
+        occupancy: 'Vacant',
+        condoFees: 0,
+        flooring: 'Engineered Hardwood',
+        appliancesIncluded: true,
+        garageType: 'Triple Attached',
+        floors: 2,
+        basement: 'Full',
+        basementDev: 'Finished',
+        separateEntrance: true,
+        notes: 'Stunning property with smart home features.',
+        addedDate: new Date().toISOString()
+      },
+      { 
+        id: 'p4', 
+        address: '101 Cedar Ln', 
+        community: 'Cedar Creek', 
+        beds: 2, 
+        baths: 2, 
+        size: 950, 
+        price: 350000, 
+        isOurInventory: true,
+        builder: 'City Condos',
+        yearBuilt: 2020,
+        propertyClass: 'Residential',
+        buildingType: 'Apartment',
+        style: 'Modern',
+        model: 'Suite 4B',
+        blockLot: 'C1-L10',
+        legalPlan: 'PL-5544',
+        occupancy: 'Tenant',
+        condoFees: 350,
+        flooring: 'Vinyl Cover',
+        appliancesIncluded: true,
+        garageType: 'Underground',
+        floors: 1,
+        basement: 'None',
+        basementDev: 'None',
+        separateEntrance: false,
+        notes: 'Great investment property.',
+        addedDate: new Date().toISOString()
+      },
+      { 
+        id: 'p5', 
+        address: '202 Elm St', 
+        community: 'Elmwood', 
+        beds: 3, 
+        baths: 2.5, 
+        size: 1600, 
+        price: 450000, 
+        isOurInventory: false,
+        builder: 'Value Builders',
+        yearBuilt: 2015,
+        propertyClass: 'Residential',
+        buildingType: 'Townhouse',
+        style: 'Traditional',
+        model: 'Townhome A',
+        blockLot: 'E2-L8',
+        legalPlan: 'PL-2211',
+        occupancy: 'Owner Occupied',
+        condoFees: 200,
+        flooring: 'Carpet/Tile',
+        appliancesIncluded: true,
+        garageType: 'Single Attached',
+        floors: 2,
+        basement: 'Full',
+        basementDev: 'Unfinished',
+        separateEntrance: false,
+        notes: 'End unit townhome with lots of natural light.',
+        addedDate: new Date().toISOString()
       }
     ],
     contacts: [
       { id: 'c1', fullName: 'John Smith', email: 'john@example.com', type: 'buyer', phoneNumber: '555-0101', company: 'Smith Co', assignedTo: 'u2', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: 'c2', fullName: 'Sarah Johnson', email: 'sarah@example.com', type: 'seller', phoneNumber: '555-0102', company: 'Johnson Realty', assignedTo: 'u2', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      { id: 'c2', fullName: 'Sarah Johnson', email: 'sarah@example.com', type: 'seller', phoneNumber: '555-0102', company: 'Johnson Realty', assignedTo: 'u2', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'c3', fullName: 'Michael Brown', email: 'michael@example.com', type: 'buyer', phoneNumber: '555-0103', company: 'Brown Tech', assignedTo: 'u1', createdBy: 'u2', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'c4', fullName: 'Emily Davis', email: 'emily@example.com', type: 'investor', phoneNumber: '555-0104', company: 'Davis Investments', assignedTo: 'u1', createdBy: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
     ],
     deals: [
-      { id: 'd1', propertyIds: ['p1'], stageId: '1', value: 850000, contactIds: ['c1'], notes: 'Interested in early possession.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: 'd2', propertyIds: ['p2'], stageId: '2', value: 620000, contactIds: ['c2'], notes: 'Needs to confirm financing.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      { id: 'd1', propertyIds: ['p1', 'p3'], stageId: '1', value: 1950000, contactIds: ['c1'], assignedAgentId: 'u2', notes: 'Interested in early possession.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'd2', propertyIds: ['p2'], stageId: '2', value: 620000, contactIds: ['c2'], assignedAgentId: 'u1', notes: 'Needs to confirm financing.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'd3', propertyIds: ['p4', 'p5'], stageId: '3', value: 800000, contactIds: ['c4'], assignedAgentId: 'u1', notes: 'Looking for investment portfolio bundle.', createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'd4', propertyIds: ['p1'], stageId: '4', value: 850000, contactIds: ['c3'], assignedAgentId: 'u2', notes: 'Closed successfully last month.', createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
+      { id: 'd5', propertyIds: ['p2', 'p3', 'p4'], stageId: '1', value: 2070000, contactIds: ['c1', 'c2'], assignedAgentId: 'u2', notes: 'Client comparing multiple completely different properties.', createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date().toISOString() }
     ],
     activities: [
       { id: 'a1', description: 'Initial call with John Smith', type: 'call', createdAt: new Date().toISOString() },
@@ -125,6 +217,7 @@ async function startServer() {
         contactId: 'c1', 
         stageId: 'ls1', 
         assignedAgentId: 'u2',
+        propertyIds: ['p1', 'p2'],
         preferredCommunity: ['keswick', 'glenridding_heights'],
         minBudget: 450000,
         maxBudget: 600000,
@@ -145,9 +238,10 @@ async function startServer() {
       },
       { 
         id: 'l2', 
-        contactId: 'c2', 
+        contactId: 'c3', 
         stageId: 'ls2', 
-        assignedAgentId: 'u2',
+        assignedAgentId: 'u1',
+        propertyIds: ['p3', 'p4', 'p5'],
         preferredCommunity: ['rosenthal', 'secord'],
         minBudget: 700000,
         maxBudget: 850000,
@@ -172,14 +266,46 @@ async function startServer() {
       { id: '2', name: 'Showing', order: 2 },
       { id: '3', name: 'Offer', order: 3 },
       { id: '4', name: 'Closed', order: 4 },
-    ]
+    ],
+    leadNotes: [
+      { id: 'ln1', leadId: 'l1', note: 'Interested in modern styles.', createdBy: 'u2', createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString() },
+      { id: 'ln2', leadId: 'l1', note: 'Prefers quiet streets.', createdBy: 'u2', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    ],
+    leadHistory: [
+      { id: 'lh1', leadId: 'l1', stageId: 'ls1', changedAt: new Date(Date.now() - 172800000).toISOString() },
+    ],
   };
 
   // Generic CRUD helper (simplified)
   app.get("/api/:collection", (req, res) => {
     const { collection } = req.params;
+    const query = req.query;
+    
     if (db[collection]) {
-      res.json(db[collection]);
+      let results = db[collection];
+      
+      // Basic filtering
+      if (Object.keys(query).length > 0) {
+        results = results.filter(item => {
+          return Object.entries(query).every(([key, value]) => item[key] == value);
+        });
+      }
+      
+      res.json(results);
+    } else {
+      res.status(404).json({ error: "Collection not found" });
+    }
+  });
+
+  app.get("/api/:collection/:id", (req, res) => {
+    const { collection, id } = req.params;
+    if (db[collection]) {
+      const item = db[collection].find(i => i.id === id);
+      if (item) {
+        res.json(item);
+      } else {
+        res.status(404).json({ error: "Item not found" });
+      }
     } else {
       res.status(404).json({ error: "Collection not found" });
     }

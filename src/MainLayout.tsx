@@ -18,6 +18,7 @@ import {
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const SidebarItem: React.FC<{ icon: any, label: string, to: string, collapsed: boolean }> = ({ icon: Icon, label, to, collapsed }) => {
   const location = useLocation();
@@ -76,7 +77,7 @@ export default function MainLayout() {
   ];
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">
       {/* Sidebar */}
       <motion.aside
         initial={false}
@@ -151,6 +152,7 @@ export default function MainLayout() {
           </div>
 
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full relative transition-all">
               <Bell size={20} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-slate-900"></span>

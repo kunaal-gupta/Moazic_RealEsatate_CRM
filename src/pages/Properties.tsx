@@ -45,8 +45,8 @@ export default function Properties() {
   }, []);
 
   const filteredProperties = properties.filter(property => 
-    property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.community.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    property.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    property.community?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     property.builder?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

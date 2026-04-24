@@ -85,9 +85,9 @@ export default function DealDetail() {
         api.tasks.list(),
         api.users.list()
       ]);
-      setProperties(props.filter(p => foundDeal.propertyIds.includes(p.id)));
-      setContacts(allContacts.filter(c => foundDeal.contactIds.includes(c.id)));
-      setAvailableContacts(allContacts.filter(c => !foundDeal.contactIds.includes(c.id)));
+      setProperties(props.filter(p => foundDeal.propertyIds?.includes(p.id)));
+      setContacts(allContacts.filter(c => foundDeal.contactIds?.includes(c.id)));
+      setAvailableContacts(allContacts.filter(c => !foundDeal.contactIds?.includes(c.id)));
       setActivities(allActivities.filter(a => a.dealId === foundDeal.id));
       setTasks(allTasks.filter(t => t.dealId === foundDeal.id));
       setNotes(foundDeal.notes || '');
@@ -797,7 +797,7 @@ export default function DealDetail() {
                       <label key={contact.id} className="flex items-center gap-2 text-sm text-slate-300 hover:text-white cursor-pointer">
                         <input 
                           type="checkbox"
-                          checked={showingForm.participantIds.includes(contact.id)}
+                          checked={showingForm.participantIds?.includes(contact.id)}
                           onChange={(e) => {
                             const ids = e.target.checked 
                               ? [...showingForm.participantIds, contact.id]

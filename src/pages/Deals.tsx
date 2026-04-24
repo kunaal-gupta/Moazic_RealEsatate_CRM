@@ -7,7 +7,9 @@ import {
   Search,
   Filter,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  User as UserIcon,
+  MapPin
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -35,13 +37,18 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { api } from '../lib/api';
-import { Deal, DealStage } from '../types';
+import { Deal, DealStage, User } from '../types';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 import { Property, Contact } from '../types';
 
-const SortableDealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
+const SortableDealCard: React.FC<{ 
+  deal: Deal, 
+  properties: Property[], 
+  contacts: Contact[], 
+  users: User[] 
+}> = ({ deal, properties, contacts, users }) => {
   const {
     attributes,
     listeners,
@@ -57,56 +64,68 @@ const SortableDealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const dealProperties = properties.filter(p => deal.propertyIds.includes(p.id));
+  const dealContacts = contacts.filter(c => deal.contactIds.includes(c.id));
+  const assignedAgent = users.find(u => u.id === deal.assignedAgentId);
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Link to={`/deals/${deal.id}`} onClick={(e) => isDragging && e.preventDefault()}>
         <div 
-          className="bg-slate-800 border border-slate-700 p-4 rounded-xl mb-3 cursor-grab active:cursor-grabbing hover:border-blue-500/50 transition-all group"
+          className="bg-slate-900 border border-slate-800/50 p-4 rounded-xl mb-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)] cursor-grab active:cursor-grabbing hover:border-blue-500/30 transition-all group relative overflow-hidden"
           style={{ touchAction: 'none' }}
         >
           <div className="flex justify-between items-start mb-3">
-            <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-2 py-0.5 rounded">
-              ID: {deal.id.slice(0, 4)}
-            </span>
-            <button className="text-slate-500 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-              <MoreHorizontal size={16} />
-            </button>
+             <div className="flex items-center gap-2">
+               <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center">
+                 <UserIcon size={12} className="text-slate-400" />
+               </div>
+               <span className="text-slate-200 text-xs font-semibold">
+                 {assignedAgent?.fullName || 'Unassigned'}
+               </span>
+             </div>
+             <div className="text-right">
+                <div className="text-emerald-400 font-bold text-xs font-mono">${deal.value?.toLocaleString() || "0"}</div>
+             </div>
           </div>
-          <h4 className="text-sm font-bold text-white mb-2 group-hover:text-blue-400 transition-all">
-            Property Deal #{deal.id.slice(-4)}
-          </h4>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <DollarSign size={14} className="text-emerald-500" />
-              <span className="font-medium text-slate-200">${deal.value?.toLocaleString() || "0"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <Calendar size={14} />
-              <span>Added {new Date(deal.createdAt).toLocaleDateString()}</span>
-            </div>
+          
+          <div className="space-y-1.5 mb-4">
+             {dealProperties.length > 0 ? (
+                 dealProperties.map(p => (
+                    <div key={p.id} className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-slate-800/50 border border-slate-700/50 text-[10px] items-center text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition-colors">
+                      <MapPin size={12} className="text-blue-400 shrink-0" />
+                      <span className="truncate flex-1 font-medium">{p.address}</span>
+                    </div>
+                 ))
+             ) : (
+                 <div className="px-2.5 py-1.5 rounded bg-slate-800/20 border border-slate-800 text-[10px] text-slate-500 italic">No properties</div>
+             )}
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-700 flex justify-between items-center">
-            <div className="flex -space-x-2">
-              {[1, 2].map(i => (
-                <div key={i} className="w-6 h-6 rounded-full bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-[10px] font-bold text-white">
-                  {i === 1 ? 'JD' : 'AS'}
-                </div>
-              ))}
+          
+          <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-800/60">
+            <div className="flex -space-x-1.5">
+              {dealContacts.length > 0 ? (
+                dealContacts.map(contact => (
+                  <div 
+                    key={contact.id} 
+                    className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[9px] text-white font-bold ring-2 ring-slate-900 shadow-sm"
+                    title={contact.fullName}
+                  >
+                    {getInitials(contact.fullName)}
+                  </div>
+                ))
+              ) : (
+                <span className="text-[10px] text-slate-500">No contacts</span>
+              )}
             </div>
-            <div className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">
-              2 Contacts
+            <div className="flex flex-col text-right items-end">
+              <span className="text-slate-500 text-[8px] uppercase tracking-widest font-semibold flex items-center gap-1"><Calendar size={10} /> Updated</span>
+              <span className="text-slate-400 text-[9px] font-mono">{new Date(deal.updatedAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
             </div>
-          </div>
-          <div className="mt-3">
-            <Link 
-              to={`/deals/${deal.id}`}
-              className="w-full py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              View Full Listing
-            </Link>
           </div>
         </div>
       </Link>
@@ -114,11 +133,36 @@ const SortableDealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
   );
 };
 
-const DroppableColumn: React.FC<{ id: string, children: React.ReactNode }> = ({ id, children }) => {
+const DroppableColumn: React.FC<{ 
+  id: string, 
+  children: React.ReactNode, 
+  title: string, 
+  count: number 
+}> = ({ id, children, title, count }) => {
   const { setNodeRef } = useDroppable({ id });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
-    <div ref={setNodeRef} className="flex-1 p-3 overflow-y-auto custom-scrollbar min-h-[150px]">
-      {children}
+    <div ref={setNodeRef} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
+      <div 
+        className="p-4 flex justify-between items-center border-b border-slate-800 cursor-pointer hover:bg-slate-800/50 transition-colors"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="font-bold text-slate-200">{title}</h3>
+          <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {count}
+          </span>
+        </div>
+        <div className="text-slate-500 text-[10px] font-bold uppercase">
+          {isCollapsed ? 'Expand' : 'Collapse'}
+        </div>
+      </div>
+      {!isCollapsed && (
+        <div className="flex-1 p-3 overflow-y-auto custom-scrollbar min-h-[150px]">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
@@ -126,6 +170,7 @@ const DroppableColumn: React.FC<{ id: string, children: React.ReactNode }> = ({ 
 export default function Deals() {
   const [stages, setStages] = useState<DealStage[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isNewDealModalOpen, setIsNewDealModalOpen] = useState(false);
@@ -159,16 +204,18 @@ export default function Deals() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [s, d, p, c] = await Promise.all([
+        const [s, d, p, c, u] = await Promise.all([
           api.stages.list(), 
           api.deals.list(),
           api.properties.list(),
-          api.contacts.list()
+          api.contacts.list(),
+          api.users.list()
         ]);
         setStages(s.sort((a, b) => a.order - b.order));
         setDeals(d);
         setProperties(p);
         setContacts(c);
+        setUsers(u);
       } catch (err) {
         console.error(err);
       }
@@ -242,7 +289,18 @@ export default function Deals() {
     }
   };
 
-  const getDealsInStage = (stageId: string) => deals.filter(d => d.stageId === stageId);
+  const [filterContact, setFilterContact] = useState<string>('');
+  const [filterAgent, setFilterAgent] = useState<string>('');
+  const [filterProperty, setFilterProperty] = useState<string>('');
+
+  const filteredDeals = deals.filter(deal => {
+    if (filterContact && !deal.contactIds.includes(filterContact)) return false;
+    if (filterAgent && deal.assignedAgentId !== filterAgent) return false;
+    if (filterProperty && !deal.propertyIds.includes(filterProperty)) return false;
+    return true;
+  });
+
+  const getDealsInStage = (stageId: string) => filteredDeals.filter(d => d.stageId === stageId);
 
   const handleCreateDeal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,18 +361,51 @@ export default function Deals() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input 
-            type="text" 
-            placeholder="Filter deals..." 
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          />
+      <div className="flex flex-col sm:flex-row gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
+        <div className="flex-1">
+          <select
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterAgent}
+            onChange={(e) => setFilterAgent(e.target.value)}
+          >
+            <option value="">All Agents</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.fullName}</option>
+            ))}
+          </select>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-700 transition-all">
-          <Filter size={16} /> Filters
-        </button>
+        <div className="flex-1">
+          <select
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterContact}
+            onChange={(e) => setFilterContact(e.target.value)}
+          >
+            <option value="">All Contacts</option>
+            {contacts.map(c => (
+              <option key={c.id} value={c.id}>{c.fullName}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1">
+          <select
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterProperty}
+            onChange={(e) => setFilterProperty(e.target.value)}
+          >
+            <option value="">All Properties</option>
+            {properties.map(p => (
+              <option key={p.id} value={p.id}>{p.address}</option>
+            ))}
+          </select>
+        </div>
+        {(filterAgent || filterContact || filterProperty) && (
+          <button 
+            onClick={() => { setFilterAgent(''); setFilterContact(''); setFilterProperty(''); }}
+            className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm hover:bg-slate-700 transition-colors whitespace-nowrap"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {/* View Content */}
@@ -328,37 +419,29 @@ export default function Deals() {
         >
           <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
             <div className="flex gap-6 h-full min-w-max">
-              {stages.map(stage => (
-                <div key={stage.id} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
-                  <div className="p-4 flex justify-between items-center border-b border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-200">{stage.name}</h3>
-                      <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {getDealsInStage(stage.id).length}
-                      </span>
-                    </div>
-                    <button className="text-slate-500 hover:text-white">
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                  <SortableContext 
-                    id={stage.id}
-                    items={getDealsInStage(stage.id).map(d => d.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <DroppableColumn id={stage.id}>
-                      {getDealsInStage(stage.id).map(deal => (
-                        <SortableDealCard key={deal.id} deal={deal} />
-                      ))}
-                      {getDealsInStage(stage.id).length === 0 && (
-                        <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
-                          No deals here
-                        </div>
-                      )}
-                    </DroppableColumn>
-                  </SortableContext>
-                </div>
-              ))}
+              {stages.map(stage => {
+                const dealsInStage = getDealsInStage(stage.id);
+                return (
+                  <React.Fragment key={stage.id}>
+                    <SortableContext 
+                      id={stage.id}
+                      items={dealsInStage.map(d => d.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <DroppableColumn id={stage.id} title={stage.name} count={dealsInStage.length}>
+                        {dealsInStage.map(deal => (
+                          <SortableDealCard key={deal.id} deal={deal} properties={properties} contacts={contacts} users={users} />
+                        ))}
+                        {dealsInStage.length === 0 && (
+                          <div className="h-32 border-2 border-dashed border-slate-800 rounded-xl flex items-center justify-center text-slate-600 text-sm italic">
+                            No deals here
+                          </div>
+                        )}
+                      </DroppableColumn>
+                    </SortableContext>
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
           <DragOverlay>
@@ -388,17 +471,24 @@ export default function Deals() {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-slate-900 z-10">
                 <tr className="border-b border-slate-800">
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Property Deal</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">ID</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Stage</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Value</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Added</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Assigned Agent</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Properties</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Created</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Updated</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contacts</th>
                 </tr>
               </thead>
               <tbody>
-                {deals.map(deal => {
+                {filteredDeals.map(deal => {
                   const stage = stages.find(s => s.id === deal.stageId);
+                  const assignedAgent = users.find(u => u.id === deal.assignedAgentId);
+                  const dealProperties = properties.filter(p => deal.propertyIds.includes(p.id));
+                  const dealContacts = contacts.filter(c => deal.contactIds.includes(c.id));
+                  
+                  const getInitials = (name: string) => {
+                    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+                  };
+
                   return (
                     <motion.tr 
                       layout
@@ -407,51 +497,37 @@ export default function Deals() {
                       key={deal.id} 
                       className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group"
                     >
+                      <td className="p-4 text-white text-sm">
+                        {assignedAgent?.fullName || 'Unassigned'}
+                      </td>
+                      <td className="p-4 text-slate-300 text-sm">
+                        {dealProperties.map(p => p.address).join(', ')}
+                      </td>
+                      <td className="p-4 text-slate-400 text-xs">
+                        {new Date(deal.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-4 text-slate-400 text-xs">
+                        {new Date(deal.updatedAt).toLocaleDateString()}
+                      </td>
                       <td className="p-4">
-                        <Link to={`/deals/${deal.id}`} className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-400">
-                            DE
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Property Deal #{deal.id.slice(-4)}</p>
-                            <p className="text-[10px] text-slate-500">Active Pipeline Entry</p>
-                          </div>
-                        </Link>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="text-[10px] font-mono text-slate-500">#{deal.id.slice(0, 4)}</span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className={cn(
-                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter",
-                          stage?.name === 'Closed' ? "bg-emerald-500/10 text-emerald-400" :
-                          stage?.name === 'Offer' ? "bg-purple-500/10 text-purple-400" :
-                          stage?.name === 'Showing' ? "bg-blue-500/10 text-blue-400" :
-                          "bg-slate-800 text-slate-400"
-                        )}>
-                          {stage?.name || 'Unknown'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <span className="text-sm font-mono font-bold text-emerald-500">${deal.value?.toLocaleString()}</span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="text-xs text-slate-400">{new Date(deal.createdAt).toLocaleDateString()}</span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <Link 
-                          to={`/deals/${deal.id}`}
-                          className="text-[10px] font-bold text-blue-400 uppercase tracking-widest hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-lg transition-all"
-                        >
-                          View Detail
-                        </Link>
+                        <div className="flex gap-1">
+                          {dealContacts.map(contact => (
+                            <div 
+                              key={contact.id} 
+                              className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white font-bold"
+                              title={contact.fullName}
+                            >
+                              {getInitials(contact.fullName)}
+                            </div>
+                          ))}
+                        </div>
                       </td>
                     </motion.tr>
                   );
                 })}
-                {deals.length === 0 && (
+                {filteredDeals.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-12 text-center text-slate-500 italic">
+                    <td colSpan={5} className="p-12 text-center text-slate-500 italic">
                       No entries found in the pipeline.
                     </td>
                   </tr>

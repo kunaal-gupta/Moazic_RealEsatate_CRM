@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 import { Showing, Property, Contact } from '../types';
 import { cn } from '../lib/utils';
+import MultiSelect from '../components/MultiSelect';
 
 export default function Showings() {
   const [showings, setShowings] = useState<Showing[]>([]);
@@ -21,12 +22,16 @@ export default function Showings() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newShowing, setNewShowing] = useState<Partial<Showing>>({
-    propertyId: '',
+    propertyIds: [],
     scheduledAt: '',
+    endScheduledAt: '',
     status: 'scheduled',
     participantIds: [],
     notes: ''
   });
+
+  const propertyOptions = properties.map(p => ({ id: p.id, name: `${p.address} (${p.community})` }));
+  const contactOptions = contacts.map(c => ({ id: c.id, name: c.fullName }));
 
   useEffect(() => {
     Promise.all([
@@ -48,8 +53,9 @@ export default function Showings() {
       setShowings([scheduledShowing, ...showings]);
       setIsModalOpen(false);
       setNewShowing({
-        propertyId: '',
+        propertyIds: [],
         scheduledAt: '',
+        endScheduledAt: '',
         status: 'scheduled',
         participantIds: [],
         notes: ''
@@ -88,10 +94,10 @@ export default function Showings() {
         {/* Calendar Placeholder / List */}
         <div className="xl:col-span-2 space-y-4">
           {(showings.length > 0 ? showings : [
-            { id: 's1', propertyId: 'p1', scheduledAt: new Date().toISOString(), status: 'scheduled', participantIds: ['c1'] },
-            { id: 's2', propertyId: 'p2', scheduledAt: new Date(Date.now() - 86400000).toISOString(), status: 'completed', participantIds: ['c2'] }
+            { id: 's1', propertyIds: ['p1'], scheduledAt: new Date().toISOString(), endScheduledAt: new Date(Date.now() + 3600000).toISOString(), status: 'scheduled', participantIds: ['c1'], dealId: '' },
+            { id: 's2', propertyIds: ['p2'], scheduledAt: new Date(Date.now() - 86400000).toISOString(), status: 'completed', participantIds: ['c2'], dealId: '', endScheduledAt: '' }
           ]).map((showing) => {
-            const property = getProperty(showing.propertyId);
+            const displayProperty = getProperty(showing.propertyIds?.[0] || (showing as any).propertyId);
             return (
               <motion.div
                 key={showing.id}
@@ -111,7 +117,7 @@ export default function Showings() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">
-                      {property?.address || 'Property Viewing'}
+                      {displayProperty?.address || 'Property Viewing'} {showing.propertyIds && showing.propertyIds.length > 1 ? `(+${showing.propertyIds.length - 1} more)` : ''}
                     </h3>
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
@@ -124,10 +130,11 @@ export default function Showings() {
                     <div className="flex items-center gap-1.5">
                       <Clock size={14} className="text-slate-500" />
                       {new Date(showing.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {showing.endScheduledAt && ` - ${new Date(showing.endScheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <MapPin size={14} className="text-slate-500" />
-                      {property?.community || 'N/A'}
+                      {displayProperty?.community || 'N/A'}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Users size={14} className="text-slate-500" />
@@ -206,51 +213,46 @@ export default function Showings() {
 
               <form onSubmit={handleScheduleShowing} className="p-8 space-y-6">
                 {/* Property Selection */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Property</label>
-                  <select
-                    required
-                    value={newShowing.propertyId}
-                    onChange={(e) => setNewShowing({ ...newShowing, propertyId: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                  >
-                    <option value="">Select a property</option>
-                    {properties.map(p => (
-                      <option key={p.id} value={p.id}>{p.address} - {p.community}</option>
-                    ))}
-                  </select>
-                </div>
+                <MultiSelect
+                  label="PROPERTIES"
+                  options={propertyOptions}
+                  selectedIds={newShowing.propertyIds || []}
+                  onChange={(ids) => setNewShowing({ ...newShowing, propertyIds: ids })}
+                  placeholder="Select properties to show..."
+                />
 
-                {/* Scheduled At */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Date & Time</label>
-                  <input
-                    required
-                    type="datetime-local"
-                    value={newShowing.scheduledAt}
-                    onChange={(e) => setNewShowing({ ...newShowing, scheduledAt: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                  />
+                {/* Date & Time */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Start Time</label>
+                    <input
+                      required
+                      type="datetime-local"
+                      value={newShowing.scheduledAt}
+                      onChange={(e) => setNewShowing({ ...newShowing, scheduledAt: e.target.value })}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">End Time</label>
+                    <input
+                      required
+                      type="datetime-local"
+                      value={newShowing.endScheduledAt}
+                      onChange={(e) => setNewShowing({ ...newShowing, endScheduledAt: e.target.value })}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
                 </div>
 
                 {/* Participants */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Participants</label>
-                  <select
-                    multiple
-                    value={newShowing.participantIds}
-                    onChange={(e) => {
-                      const values = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
-                      setNewShowing({ ...newShowing, participantIds: values });
-                    }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all min-h-[100px]"
-                  >
-                    {contacts.map(c => (
-                      <option key={c.id} value={c.id}>{c.fullName}</option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-slate-500">Hold Ctrl/Cmd to select multiple participants.</p>
-                </div>
+                <MultiSelect
+                  label="PARTICIPANTS"
+                  options={contactOptions}
+                  selectedIds={newShowing.participantIds || []}
+                  onChange={(ids) => setNewShowing({ ...newShowing, participantIds: ids })}
+                  placeholder="Select participants..."
+                />
 
                 {/* Notes */}
                 <div className="space-y-2">
@@ -273,8 +275,8 @@ export default function Showings() {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                    disabled={loading || !newShowing.scheduledAt || !newShowing.endScheduledAt || !newShowing.propertyIds?.length}
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Scheduling...' : 'Schedule Showing'}
                   </button>

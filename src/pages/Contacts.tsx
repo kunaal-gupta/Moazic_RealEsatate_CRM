@@ -15,6 +15,7 @@ import {
   Building
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Contact, User } from '../types';
 import { cn } from '../lib/utils';
@@ -51,8 +52,8 @@ export default function Contacts() {
   const filteredContacts = contacts.filter(contact => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = (
-      contact.fullName.toLowerCase().includes(searchLower) ||
-      contact.email.toLowerCase().includes(searchLower) ||
+      contact.fullName?.toLowerCase().includes(searchLower) ||
+      contact.email?.toLowerCase().includes(searchLower) ||
       (contact.company?.toLowerCase() || '').includes(searchLower) ||
       (contact.phoneNumber?.toLowerCase() || '').includes(searchLower)
     );
@@ -60,7 +61,14 @@ export default function Contacts() {
     return matchesSearch && matchesType;
   });
 
+  const navigate = useNavigate();
+
   const handleContactClick = (contact: Contact) => {
+    navigate(`/contacts/${contact.id}`);
+  };
+
+  const handleEditContact = (e: React.MouseEvent, contact: Contact) => {
+    e.stopPropagation();
     setSelectedContact(contact);
     setEditForm(contact);
     setIsCreateMode(false);
@@ -199,10 +207,7 @@ export default function Contacts() {
                   <td className="px-6 py-4 text-right">
                     <button 
                       className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleContactClick(contact);
-                      }}
+                      onClick={(e) => handleEditContact(e, contact)}
                     >
                       <MoreVertical size={16} />
                     </button>

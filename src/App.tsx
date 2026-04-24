@@ -4,7 +4,9 @@ import MainLayout from './MainLayout';
 import Dashboard from './pages/Dashboard';
 import Deals from './pages/Deals';
 import Leads from './pages/Leads';
+import LeadDetail from './pages/LeadDetail';
 import Contacts from './pages/Contacts';
+import ContactDetail from './pages/ContactDetail';
 import Properties from './pages/Properties';
 import Showings from './pages/Showings';
 import Tasks from './pages/Tasks';
@@ -27,9 +29,11 @@ export default function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="leads" element={<Leads />} />
+          <Route path="leads/:id" element={<LeadDetail />} />
           <Route path="deals" element={<Deals />} />
           <Route path="deals/:id" element={<DealDetail />} />
           <Route path="contacts" element={<Contacts />} />
+          <Route path="contacts/:id" element={<ContactDetail />} />
           <Route path="properties" element={<Properties />} />
           <Route path="showings" element={<Showings />} />
           <Route path="tasks" element={<Tasks />} />
