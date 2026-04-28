@@ -169,7 +169,7 @@ class Showing(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     deal = models.ForeignKey('crm.Pipeline', on_delete=models.CASCADE, related_name='showings')
     properties = models.ManyToManyField('crm.Property', through='crm.ShowingProperty', related_name='showings')
-    participants = models.ManyToManyField('crm.Contact', through='crm.ShowingParticipant', related_name='showings')
+    participant = models.ManyToManyField('crm.Contact', through='crm.ShowingParticipant', related_name='showings')
     scheduled_start_at = models.DateTimeField()
     scheduled_end_at = models.DateTimeField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)

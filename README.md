@@ -28,10 +28,10 @@ This repository now contains:
 2. Install dependencies:
    `pip install -r backend/requirements.txt`
 3. Run migrations:
-   `python backend/manage.py migrate`
+   `python manage.py migrate`
 4. (Optional) Create admin user:
-   `python backend/manage.py createsuperuser`
+   `python manage.py createsuperuser`
 5. Start server:
-   `python backend/manage.py runserver`
+   `python manage.py runserver`
 
 Django admin will be available at `http://127.0.0.1:8000/admin/`.
