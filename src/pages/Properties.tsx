@@ -29,6 +29,13 @@ import { Property } from '../types';
 export default function Properties() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCommunity, setFilterCommunity] = useState('');
+  const [filterMinPrice, setFilterMinPrice] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
+  const [filterBeds, setFilterBeds] = useState('');
+  const [filterBaths, setFilterBaths] = useState('');
+  const [filterMinSize, setFilterMinSize] = useState('');
+  const [filterMaxSize, setFilterMaxSize] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -48,11 +55,28 @@ export default function Properties() {
     api.properties.list().then(setProperties);
   }, []);
 
-  const filteredProperties = properties.filter(property => 
-    property.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.community?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.builder?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProperties = properties.filter(property => {
+    if (searchTerm && !(
+      property.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.community?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.builder?.toLowerCase().includes(searchTerm.toLowerCase())
+    )) return false;
+
+    if (filterCommunity && property.community !== filterCommunity) return false;
+    
+    if (filterMinPrice && (property.price || 0) < Number(filterMinPrice)) return false;
+    if (filterMaxPrice && (property.price || 0) > Number(filterMaxPrice)) return false;
+
+    if (filterBeds && (property.beds || 0) < Number(filterBeds)) return false;
+    if (filterBaths && (property.baths || 0) < Number(filterBaths)) return false;
+    
+    if (filterMinSize && (property.size || 0) < Number(filterMinSize)) return false;
+    if (filterMaxSize && (property.size || 0) > Number(filterMaxSize)) return false;
+
+    return true;
+  });
+
+  const uniqueCommunities = Array.from(new Set(properties.map(p => p.community).filter(Boolean)));
 
   const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,30 +118,125 @@ export default function Properties() {
         </button>
       </div>
 
-      <div className="flex items-center gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input 
-            type="text" 
-            placeholder="Search by address, community, builder..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          />
+      <div className="flex flex-col gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search by address, community, builder..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-200"
+            />
+          </div>
+          <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white transition-colors'}`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white transition-colors'}`}
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
-        <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-700">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white transition-colors'}`}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <select
+            className="bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterCommunity}
+            onChange={(e) => setFilterCommunity(e.target.value)}
           >
-            <LayoutGrid size={16} />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white transition-colors'}`}
+            <option value="">All Communities</option>
+            {uniqueCommunities.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          
+          <div className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded-lg px-2">
+            <DollarSign size={14} className="text-slate-500 shrink-0" />
+            <input 
+              type="number"
+              placeholder="Min $"
+              value={filterMinPrice}
+              onChange={(e) => setFilterMinPrice(e.target.value)}
+              className="w-full bg-transparent border-none p-0 text-sm text-slate-300 focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <span className="text-slate-600">-</span>
+            <input 
+              type="number"
+              placeholder="Max $"
+              value={filterMaxPrice}
+              onChange={(e) => setFilterMaxPrice(e.target.value)}
+              className="w-full bg-transparent border-none p-0 text-sm text-slate-300 focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+            />
+          </div>
+
+          <select
+            className="bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterBeds}
+            onChange={(e) => setFilterBeds(e.target.value)}
           >
-            <List size={16} />
-          </button>
+            <option value="">Any Beds</option>
+            <option value="1">1+ Beds</option>
+            <option value="2">2+ Beds</option>
+            <option value="3">3+ Beds</option>
+            <option value="4">4+ Beds</option>
+            <option value="5">5+ Beds</option>
+          </select>
+
+          <select
+            className="bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterBaths}
+            onChange={(e) => setFilterBaths(e.target.value)}
+          >
+            <option value="">Any Baths</option>
+            <option value="1">1+ Baths</option>
+            <option value="2">2+ Baths</option>
+            <option value="3">3+ Baths</option>
+            <option value="4">4+ Baths</option>
+          </select>
+
+          <div className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded-lg px-2">
+            <Maximize size={14} className="text-slate-500 shrink-0" />
+            <input 
+              type="number"
+              placeholder="Min sqft"
+              value={filterMinSize}
+              onChange={(e) => setFilterMinSize(e.target.value)}
+              className="w-full bg-transparent border-none p-0 text-sm text-slate-300 focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <span className="text-slate-600">-</span>
+            <input 
+              type="number"
+              placeholder="Max sqft"
+              value={filterMaxSize}
+              onChange={(e) => setFilterMaxSize(e.target.value)}
+              className="w-full bg-transparent border-none p-0 text-sm text-slate-300 focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+            />
+          </div>
+
+          {(filterCommunity || filterMinPrice || filterMaxPrice || filterBeds || filterBaths || filterMinSize || filterMaxSize) && (
+            <button 
+              onClick={() => {
+                setFilterCommunity('');
+                setFilterMinPrice('');
+                setFilterMaxPrice('');
+                setFilterBeds('');
+                setFilterBaths('');
+                setFilterMinSize('');
+                setFilterMaxSize('');
+              }}
+              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm hover:bg-slate-700 transition-colors whitespace-nowrap"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -435,7 +554,7 @@ export default function Properties() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveProperty} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <form onSubmit={handleSaveProperty} className="p-4 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Address</label>

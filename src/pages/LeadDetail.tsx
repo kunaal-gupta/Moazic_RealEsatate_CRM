@@ -725,7 +725,7 @@ const LeadDetail: React.FC = () => {
         onClose={() => setIsEditModalOpen(false)}
         title="Edit Lead"
       >
-        <form onSubmit={handleUpdateLead} className="space-y-8 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
+        <form onSubmit={handleUpdateLead} className="space-y-8 px-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-6">
               <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest border-b border-white/5 pb-2">Core Information</h3>

@@ -273,7 +273,7 @@ export default function Contacts() {
                 </button>
               </div>
 
-              <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="p-4 sm:p-8 overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Full Name */}
                   <div className="space-y-2">

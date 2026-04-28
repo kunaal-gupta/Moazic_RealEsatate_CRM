@@ -143,7 +143,7 @@ const DroppableColumn: React.FC<{
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div ref={setNodeRef} className="w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50">
+    <div ref={setNodeRef} className="w-[85vw] sm:w-80 flex flex-col bg-slate-900/30 rounded-2xl border border-slate-800/50 shrink-0 snap-center">
       <div 
         className="p-4 flex justify-between items-center border-b border-slate-800 cursor-pointer hover:bg-slate-800/50 transition-colors"
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -328,12 +328,12 @@ export default function Deals() {
 
   return (
     <div className="h-full flex flex-col space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Active Pipeline</h1>
           <p className="text-slate-400 mt-1">Manage your active real estate opportunities.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-1">
             <button 
               onClick={() => setView('kanban')}
@@ -361,8 +361,8 @@ export default function Deals() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
-        <div className="flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
+        <div>
           <select
             className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             value={filterAgent}
@@ -374,7 +374,7 @@ export default function Deals() {
             ))}
           </select>
         </div>
-        <div className="flex-1">
+        <div>
           <select
             className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             value={filterContact}
@@ -386,7 +386,7 @@ export default function Deals() {
             ))}
           </select>
         </div>
-        <div className="flex-1">
+        <div className="flex gap-2">
           <select
             className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             value={filterProperty}
@@ -397,15 +397,15 @@ export default function Deals() {
               <option key={p.id} value={p.id}>{p.address}</option>
             ))}
           </select>
+          {(filterAgent || filterContact || filterProperty) && (
+            <button 
+              onClick={() => { setFilterAgent(''); setFilterContact(''); setFilterProperty(''); }}
+              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0"
+            >
+              Clear
+            </button>
+          )}
         </div>
-        {(filterAgent || filterContact || filterProperty) && (
-          <button 
-            onClick={() => { setFilterAgent(''); setFilterContact(''); setFilterProperty(''); }}
-            className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm hover:bg-slate-700 transition-colors whitespace-nowrap"
-          >
-            Clear
-          </button>
-        )}
       </div>
 
       {/* View Content */}
@@ -417,8 +417,8 @@ export default function Deals() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-            <div className="flex gap-6 h-full min-w-max">
+          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar snap-x snap-mandatory">
+            <div className="flex gap-4 sm:gap-6 h-full min-w-max px-2 sm:px-0">
               {stages.map(stage => {
                 const dealsInStage = getDealsInStage(stage.id);
                 return (

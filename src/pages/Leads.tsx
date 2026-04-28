@@ -231,7 +231,7 @@ const SortableLeadCard: React.FC<{
                 <motion.div 
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
-                  className="grid grid-cols-2 gap-5 px-1 pb-2"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-1 pb-2"
                 >
                   <div className="col-span-2 space-y-1">
                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Budget</p>
@@ -265,45 +265,8 @@ const SortableLeadCard: React.FC<{
                 </motion.div>
               )}
            </div>
-
-           {leadProperties.length > 0 && (
-             <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setIsPropertiesExpanded(!isPropertiesExpanded); }}
-                  className="w-full flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
-                >
-                  Matched Properties ({leadProperties.length})
-                  <ChevronDown size={14} className={cn("transition-transform duration-300", isPropertiesExpanded && "rotate-180")} />
-                </button>
-                {isPropertiesExpanded && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    className="flex flex-col gap-2 overflow-hidden"
-                  >
-                    {leadProperties.map((p: any) => (
-                      <div key={p.id} className="flex flex-col p-2.5 rounded-lg bg-slate-950/50 border border-white/5 hover:border-blue-500/30 transition-colors">
-                        <div className="flex items-start justify-between">
-                           <span className="text-xs font-bold text-slate-200">{p.address}</span>
-                           <span className="text-[10px] font-mono text-emerald-400 font-bold">${p.price?.toLocaleString() || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
-                          <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-white/5">
-                             <Home size={10} />
-                             <span>{p.beds || 0} Beds / {p.baths || 0} Baths</span>
-                          </div>
-                          <div className="px-1.5 py-0.5 rounded bg-white/5">
-                            {p.community}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-             </div>
-           )}
         </div>
- 
+
         <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
            <div className="flex items-center gap-3">
              <div className="w-7 h-7 rounded-lg bg-blue-600/10 border border-blue-500/10 flex items-center justify-center text-[11px] font-black text-blue-500 uppercase">
@@ -353,6 +316,11 @@ export default function Leads() {
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [assigningLeadIds, setAssigningLeadIds] = useState<string[]>([]);
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'single' | 'bulk', id?: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterContact, setFilterContact] = useState<string>('');
+  const [filterAgent, setFilterAgent] = useState<string>('');
+  const [filterProperty, setFilterProperty] = useState<string>('');
   const [newLeadData, setNewLeadData] = useState({
     contactId: '',
     assignedAgentId: '',
@@ -474,8 +442,17 @@ export default function Leads() {
     }
   };
 
-  const getLeadsInStage = (stageId: string) => leads.filter(l => l.stageId === stageId);
   const getContactName = (contactId: string) => contacts.find(c => c.id === contactId)?.fullName || "Unknown Contact";
+
+  const filteredLeads = leads.filter(lead => {
+    if (searchTerm && !getContactName(lead.contactId).toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (filterContact && lead.contactId !== filterContact) return false;
+    if (filterAgent && lead.assignedAgentId !== filterAgent) return false;
+    if (filterProperty && !lead.propertyIds?.includes(filterProperty)) return false;
+    return true;
+  });
+
+  const getLeadsInStage = (stageId: string) => filteredLeads.filter(l => l.stageId === stageId);
 
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -615,12 +592,24 @@ export default function Leads() {
     }
   };
 
-  const handleDeleteLead = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this lead?")) return;
+  const handleDeletePrompt = (id: string) => {
+    setDeleteConfirm({ type: 'single', id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    
     try {
-      await api.leads.delete(id);
-      setLeads(prev => prev.filter(l => l.id !== id));
-      setSelectedLeadIds(prev => prev.filter(lid => lid !== id));
+      if (deleteConfirm.type === 'single' && deleteConfirm.id) {
+        await api.leads.delete(deleteConfirm.id);
+        setLeads(prev => prev.filter(l => l.id !== deleteConfirm.id));
+        setSelectedLeadIds(prev => prev.filter(lid => lid !== deleteConfirm.id));
+      } else if (deleteConfirm.type === 'bulk') {
+        await Promise.all(selectedLeadIds.map(id => api.leads.delete(id)));
+        setLeads(prev => prev.filter(l => !selectedLeadIds.includes(l.id)));
+        setSelectedLeadIds([]);
+      }
+      setDeleteConfirm(null);
     } catch (err) {
       console.error(err);
     }
@@ -667,7 +656,7 @@ export default function Leads() {
 
   const toggleSelectAll = (selected: boolean) => {
     if (selected) {
-      setSelectedLeadIds(leads.map(l => l.id));
+      setSelectedLeadIds(filteredLeads.map(l => l.id));
     } else {
       setSelectedLeadIds([]);
     }
@@ -710,18 +699,61 @@ export default function Leads() {
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-col md:flex-row items-center gap-3 bg-white/[0.02] border border-white/5 p-2 rounded-2xl">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl backdrop-blur-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
           <input 
             type="text" 
-            placeholder="Search within pipeline..." 
-            className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
+            placeholder="Search leads by contact name..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-200"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/5 text-slate-400 rounded-xl text-sm font-medium hover:bg-white/10 transition-all">
-          <Filter size={14} /> Refine View
-        </button>
+        <div>
+          <select
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterAgent}
+            onChange={(e) => setFilterAgent(e.target.value)}
+          >
+            <option value="">All Agents</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.fullName}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <select
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterContact}
+            onChange={(e) => setFilterContact(e.target.value)}
+          >
+            <option value="">All Contacts</option>
+            {contacts.map(c => (
+              <option key={c.id} value={c.id}>{c.fullName}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <select
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            value={filterProperty}
+            onChange={(e) => setFilterProperty(e.target.value)}
+          >
+            <option value="">All Properties</option>
+            {properties.map(p => (
+              <option key={p.id} value={p.id}>{p.address}</option>
+            ))}
+          </select>
+          {(searchTerm || filterAgent || filterContact || filterProperty) && (
+            <button 
+              onClick={() => { setSearchTerm(''); setFilterAgent(''); setFilterContact(''); setFilterProperty(''); }}
+              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* View Content */}
@@ -733,10 +765,10 @@ export default function Leads() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-            <div className="flex gap-6 h-full min-w-max">
+          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar snap-x snap-mandatory">
+            <div className="flex gap-4 sm:gap-6 h-full min-w-max px-2 sm:px-0">
               {stages.map(stage => (
-                <div key={stage.id} className="w-80 flex flex-col bg-white/[0.01] border border-white/[0.04] rounded-3xl overflow-hidden self-stretch shadow-2xl">
+                <div key={stage.id} className="w-[85vw] sm:w-80 flex flex-col bg-white/[0.01] border border-white/[0.04] rounded-3xl overflow-hidden self-stretch shadow-2xl shrink-0 snap-center">
                   <div className="p-5 flex justify-between items-center border-b border-white/5 bg-slate-900/40 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -773,7 +805,7 @@ export default function Leads() {
                             stageName={leadStage?.name}
                             agentName={agent?.fullName}
                             onConvert={handleConvertToDeal}
-                            onDelete={handleDeleteLead}
+                            onDelete={handleDeletePrompt}
                             onEdit={handleEditLead}
                             onDuplicate={handleDuplicateLead}
                             onAssign={handleAssignPrompt}
@@ -836,11 +868,11 @@ export default function Leads() {
                     <div 
                       className={cn(
                         "w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer",
-                        selectedLeadIds.length === leads.length && leads.length > 0 ? "bg-blue-500 border-blue-500" : "bg-slate-800 border-slate-600"
+                        selectedLeadIds.length === filteredLeads.length && filteredLeads.length > 0 ? "bg-blue-500 border-blue-500" : "bg-slate-800 border-slate-600"
                       )}
-                      onClick={() => toggleSelectAll(selectedLeadIds.length !== leads.length)}
+                      onClick={() => toggleSelectAll(selectedLeadIds.length !== filteredLeads.length)}
                     >
-                      {selectedLeadIds.length === leads.length && leads.length > 0 && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      {selectedLeadIds.length === filteredLeads.length && filteredLeads.length > 0 && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                     </div>
                   </th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Lead Name</th>
@@ -854,7 +886,7 @@ export default function Leads() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {leads.map(lead => {
+                {filteredLeads.map(lead => {
                   const stage = stages.find(s => s.id === lead.stageId);
                   const agent = users.find(u => u.id === lead.assignedAgentId);
                   const contactName = getContactName(lead.contactId);
@@ -950,18 +982,21 @@ export default function Leads() {
                           <button 
                             className="p-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
                             onClick={() => handleConvertToDeal(lead)}
+                            title="Convert to Deal"
                           >
                             <Zap size={12} />
                           </button>
                           <button 
                             className="p-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
                             onClick={() => handleEditLead(lead)}
+                            title="Edit Lead"
                           >
                             <Edit2 size={12} />
                           </button>
                           <button 
                             className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                            onClick={() => handleDeleteLead(lead.id)}
+                            onClick={() => handleDeletePrompt(lead.id)}
+                            title="Delete Lead"
                           >
                             <Trash2 size={12} />
                           </button>
@@ -970,10 +1005,10 @@ export default function Leads() {
                     </motion.tr>
                   );
                 })}
-                {leads.length === 0 && (
+                {filteredLeads.length === 0 && (
                   <tr>
                     <td colSpan={6} className="p-12 text-center text-slate-500 italic">
-                      No leads found match your criteria.
+                      No leads found matching your criteria.
                     </td>
                   </tr>
                 )}
@@ -1013,13 +1048,7 @@ export default function Leads() {
             </button>
             <button 
               onClick={() => {
-                if (confirm(`Are you sure you want to delete ${selectedLeadIds.length} leads?`)) {
-                  Promise.all(selectedLeadIds.map(id => api.leads.delete(id)))
-                    .then(() => {
-                      setLeads(prev => prev.filter(l => !selectedLeadIds.includes(l.id)));
-                      setSelectedLeadIds([]);
-                    });
-                }
+                setDeleteConfirm({ type: 'bulk' });
               }}
               className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-xs font-bold transition-all"
             >
@@ -1038,7 +1067,7 @@ export default function Leads() {
         }}
         title={editingLeadId ? "Edit Lead" : "Create New Lead"}
       >
-        <form onSubmit={handleCreateLead} className="space-y-6 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
+        <form onSubmit={handleCreateLead} className="space-y-6 px-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Essential Info */}
             <div className="space-y-4">
@@ -1112,13 +1141,17 @@ export default function Leads() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Possession Timeline</label>
-                <input
-                  type="text"
+                <select
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. 3-6 months"
                   value={newLeadData.possessionTimeline}
                   onChange={(e) => setNewLeadData({ ...newLeadData, possessionTimeline: e.target.value })}
-                />
+                >
+                  <option value="">Select timeline...</option>
+                  <option value="less than 3 months">Less than 3 months</option>
+                  <option value="3-6 months">3-6 months</option>
+                  <option value="6-12 months">6-12 months</option>
+                  <option value="1 year +">1 year +</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Max Condo Fees ($)</label>
@@ -1308,6 +1341,35 @@ export default function Leads() {
               className="px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"
             >
               {isSubmitting ? "Assigning..." : <>Confirm Assignment</>}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Confirm Deletion"
+      >
+        <div className="p-2 space-y-4">
+          <p className="text-slate-300">
+            {deleteConfirm?.type === 'bulk' 
+              ? `Are you sure you want to delete ${selectedLeadIds.length} leads? This action cannot be undone.`
+              : 'Are you sure you want to delete this lead? This action cannot be undone.'}
+          </p>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="px-6 py-2 bg-red-600/90 text-white rounded-lg text-sm font-medium hover:bg-red-500 transition-all shadow-lg shadow-red-500/20"
+            >
+              Delete
             </button>
           </div>
         </div>
