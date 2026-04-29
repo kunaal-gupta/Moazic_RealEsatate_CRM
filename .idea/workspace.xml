@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="774be01a-802e-4b63-9f55-5c1d1fb6bae6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/backend/crm/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/crm/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -130,7 +130,7 @@
       <workItem from="1777068875153" duration="2512000" />
       <workItem from="1777403629544" duration="187000" />
       <workItem from="1777408888332" duration="416000" />
-      <workItem from="1777411928322" duration="8036000" />
+      <workItem from="1777411928322" duration="10594000" />
     </task>
     <servers />
   </component>
