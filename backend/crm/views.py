@@ -1,41 +1,37 @@
-from django.http import JsonResponse
-
-
-def _page(name: str) -> JsonResponse:
-    return JsonResponse({'page': name, 'status': 'ok'})
+from django.shortcuts import render
 
 
 def home(request):
-    return _page('homepage')
+    return render(request, 'crm/home.html')
 
 
 def leads(request):
-    return _page('leads')
+    return render(request, 'crm/leads.html')
 
 
 def pipeline(request):
-    return _page('pipeline')
+    return render(request, 'crm/pipeline.html')
 
 
 def contacts(request):
-    return _page('contacts')
+    return render(request, 'crm/contacts.html')
 
 
 def properties(request):
-    return _page('properties')
+    return render(request, 'crm/properties.html')
 
 
 def showings(request):
-    return _page('showings')
+    return render(request, 'crm/showings.html')
 
 
 def tasks(request):
-    return _page('tasks')
+    return render(request, 'crm/tasks.html')
 
 
 def emails(request):
-    return _page('email')
+    return render(request, 'crm/email.html')
 
 
 def settings_page(request):
-    return _page('settings')
+    return render(request, 'crm/settings.html')

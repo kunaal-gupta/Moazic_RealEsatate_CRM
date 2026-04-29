@@ -37,6 +37,13 @@ This repository now contains:
 Django admin will be available at `http://127.0.0.1:8000/admin/`.
 
 
+
+### Important
+
+- `python manage.py runserver` serves Django pages/templates from backend routes.
+- React frontend pages are served separately with `npm run dev` (usually `http://localhost:5173`).
+- To see the listed CRM pages directly from Django, open the backend routes below.
+
 ## Backend Routes
 
 - `/` homepage
