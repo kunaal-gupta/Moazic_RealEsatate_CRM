@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moazic CRM</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f6f7fb; color: #222; }
+    nav { background: #111827; padding: 12px 20px; }
+    nav a { color: #fff; text-decoration: none; margin-right: 14px; font-size: 14px; }
+    .container { max-width: 980px; margin: 24px auto; background: #fff; padding: 24px; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+    h1 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/leads/">Leads</a>
+    <a href="/pipeline/">Pipeline</a>
+    <a href="/contacts/">Contacts</a>
+    <a href="/properties/">Properties</a>
+    <a href="/showings/">Showings</a>
+    <a href="/tasks/">Tasks</a>
+    <a href="/email/">Email</a>
+    <a href="/settings/">Settings</a>
+  </nav>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
