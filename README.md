@@ -35,3 +35,16 @@ This repository now contains:
    `python manage.py runserver`
 
 Django admin will be available at `http://127.0.0.1:8000/admin/`.
+
+
+## Backend Routes
+
+- `/` homepage
+- `/leads/`
+- `/pipeline/`
+- `/contacts/`
+- `/properties/`
+- `/showings/`
+- `/tasks/`
+- `/email/`
+- `/settings/`
