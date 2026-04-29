@@ -40,16 +40,18 @@ Django admin will be available at `http://127.0.0.1:8000/admin/`.
 
 ### Important
 
-- `python manage.py runserver` serves Django pages/templates from backend routes.
-- React frontend pages are served separately with `npm run dev` (usually `http://localhost:5173`).
-- To see the listed CRM pages directly from Django, open the backend routes below.
+- `python manage.py runserver` now redirects CRM backend routes to your React frontend pages.
+- Start frontend with `npm run dev` (default `http://localhost:5173`) so redirects land on real `src/pages` routes.
+- You can override the frontend URL using `FRONTEND_DEV_URL` in your environment.
 
 ## Backend Routes
 
-- `/` homepage
+- `/` -> frontend home
+- `/dashboard/`
 - `/leads/`
 - `/pipeline/`
 - `/contacts/`
+- `/deals/` (and `/pipeline/`)
 - `/properties/`
 - `/showings/`
 - `/tasks/`

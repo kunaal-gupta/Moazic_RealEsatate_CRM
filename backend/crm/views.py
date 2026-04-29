@@ -1,37 +1,49 @@
-from django.shortcuts import render
+from django.conf import settings
+from django.shortcuts import redirect
+
+
+def _frontend(path: str = ''):
+    base = settings.FRONTEND_DEV_URL.rstrip('/')
+    page = path.lstrip('/')
+    target = f'{base}/{page}' if page else f'{base}/'
+    return redirect(target)
 
 
 def home(request):
-    return render(request, 'crm/home.html')
+    return _frontend('')
 
 
-def leads(request):
-    return render(request, 'crm/leads.html')
-
-
-def pipeline(request):
-    return render(request, 'crm/pipeline.html')
+def dashboard(request):
+    return _frontend('dashboard')
 
 
 def contacts(request):
-    return render(request, 'crm/contacts.html')
+    return _frontend('contacts')
+
+
+def deals(request):
+    return _frontend('deals')
+
+
+def leads(request):
+    return _frontend('leads')
 
 
 def properties(request):
-    return render(request, 'crm/properties.html')
+    return _frontend('properties')
 
 
 def showings(request):
-    return render(request, 'crm/showings.html')
+    return _frontend('showings')
 
 
 def tasks(request):
-    return render(request, 'crm/tasks.html')
+    return _frontend('tasks')
 
 
 def emails(request):
-    return render(request, 'crm/email.html')
+    return _frontend('email')
 
 
 def settings_page(request):
-    return render(request, 'crm/settings.html')
+    return _frontend('settings')
