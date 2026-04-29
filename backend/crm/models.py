@@ -193,7 +193,7 @@ class ShowingProperty(models.Model):
         ordering = ['order']
         constraints = [models.UniqueConstraint(fields=['showing', 'property'], name='uq_showing_property')]
         indexes = [
-            models.Index(fields=['property'], name='idx_showing_properties_property'),
+            models.Index(fields=['property'], name='idx_showing_prop_property'),
             models.Index(fields=['showing', 'order'], name='idx_showing_properties_order'),
         ]
 
