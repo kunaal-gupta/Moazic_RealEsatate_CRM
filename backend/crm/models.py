@@ -2,6 +2,8 @@ import uuid
 
 from django.db import models
 
+from backend import crm
+
 
 class User(models.Model):
     class Role(models.TextChoices):
@@ -169,7 +171,7 @@ class Showing(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     deal = models.ForeignKey('crm.Pipeline', on_delete=models.CASCADE, related_name='showings')
     properties = models.ManyToManyField('crm.Property', through='crm.ShowingProperty', related_name='showings')
-    participant = models.ManyToManyField('crm.Contact', through='crm.ShowingParticipant', related_name='showings')
+    participants = models.ManyToManyField('crm.Contact', through='crm.ShowingParticipant', related_name='showings')
     scheduled_start_at = models.DateTimeField()
     scheduled_end_at = models.DateTimeField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
@@ -193,7 +195,7 @@ class ShowingProperty(models.Model):
         ordering = ['order']
         constraints = [models.UniqueConstraint(fields=['showing', 'property'], name='uq_showing_property')]
         indexes = [
-            models.Index(fields=['property'], name='idx_showing_properties_property'),
+            models.Index(fields=['property'], name='idx_showing_prop_property'),
             models.Index(fields=['showing', 'order'], name='idx_showing_properties_order'),
         ]
 
@@ -334,7 +336,7 @@ class Email(models.Model):
     contact = models.ForeignKey('crm.Contact', on_delete=models.CASCADE, related_name='emails')
     trigger_type = models.CharField(max_length=20, choices=TriggerType.choices)
     template = models.ForeignKey('crm.EmailTemplate', on_delete=models.PROTECT, related_name='emails')
-    scheduled_at = models.DateTimeField(null=True, blank=True)
+    scheduled_start_at = models.DateTimeField(null=True, blank=True)
     deal = models.ForeignKey('crm.Pipeline', on_delete=models.CASCADE, null=True, blank=True, related_name='emails')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
