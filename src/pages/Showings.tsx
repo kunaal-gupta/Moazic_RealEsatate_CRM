@@ -85,6 +85,13 @@ export default function Showings() {
     });
   };
 
+  const getInitials = (name: string) => name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   const visibleShowings = useMemo(() => {
     const today = new Date();
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
@@ -211,82 +218,99 @@ export default function Showings() {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {visibleShowings.map((showing) => {
           const showingProperties = getShowingProperties(showing);
           const showingParticipants = getShowingParticipants(showing);
-          const locationSummary = showingProperties.length
-            ? showingProperties.map(property => `${property.address}${property.community ? ` · ${property.community}` : ''}`).join(' • ')
-            : 'No locations selected';
+          const primaryProperty = showingProperties[0];
+          const extraLocationCount = Math.max(showingProperties.length - 2, 0);
+          const visibleParticipants = showingParticipants.slice(0, 4);
+          const extraParticipantCount = Math.max(showingParticipants.length - visibleParticipants.length, 0);
 
           return (
             <motion.div
               key={showing.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
               onClick={() => setSelectedShowing(showing)}
-              className="w-full bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm hover:border-blue-500/40 transition-all group cursor-pointer"
+              className="group w-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/70 shadow-sm shadow-slate-950/20 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-slate-900 hover:shadow-xl hover:shadow-blue-950/10 cursor-pointer"
             >
-              <div className="flex flex-col xl:flex-row xl:items-center gap-6">
-                <div className="flex items-start gap-4 min-w-0 flex-1">
-                  <div className="w-16 h-16 shrink-0 rounded-xl bg-slate-800 flex flex-col items-center justify-center text-slate-400 border border-slate-700">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">
+              <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 flex-1 gap-4">
+                  <div className="hidden sm:flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border border-slate-700/70 bg-slate-800/80 text-slate-400">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
                       {new Date(showing.scheduledAt).toLocaleString('default', { month: 'short' })}
                     </span>
-                    <span className="text-xl font-bold text-white">
+                    <span className="text-xl font-black text-white">
                       {new Date(showing.scheduledAt).getDate()}
                     </span>
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 flex-1 space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">
-                        {showingProperties.length === 1 ? showingProperties[0].address : `${showingProperties.length || 'No'} Showing Locations`}
+                      <h3 className="text-lg font-semibold text-white transition-colors group-hover:text-blue-300">
+                        {primaryProperty?.address || 'Showing appointment'}
                       </h3>
-                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", statusColors[showing.status])}>
+                      <span className={cn('rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em]', statusColors[showing.status])}>
                         {showing.status}
                       </span>
+                      {showing.notesTimeline?.length ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-800/80 px-2.5 py-1 text-xs font-medium text-slate-400">
+                          <StickyNote size={12} /> {showing.notesTimeline.length} notes
+                        </span>
+                      ) : null}
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Locations</p>
-                        <div className="flex items-start gap-2 text-sm text-slate-200">
-                          <MapPin size={15} className="mt-0.5 shrink-0 text-blue-400" />
-                          <span>{locationSummary}</span>
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Schedule</p>
-                        <div className="space-y-1 text-sm text-slate-200">
-                          <div className="flex items-center gap-2"><Clock size={14} className="text-emerald-400" /> Start: {formatShowingDateTime(showing.scheduledAt)}</div>
-                          <div className="flex items-center gap-2"><Clock size={14} className="text-rose-400" /> End: {formatShowingDateTime(showing.endScheduledAt)}</div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Participants</p>
+                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr_1fr]">
+                      <div className="min-w-0 space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Locations</p>
                         <div className="flex flex-wrap gap-2">
-                          {showingParticipants.length > 0 ? showingParticipants.map(contact => (
-                            <span key={contact.id} className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 border border-slate-700">
-                              <Users size={12} className="text-slate-400" /> {contact.fullName}
+                          {showingProperties.length > 0 ? showingProperties.slice(0, 2).map(property => (
+                            <span key={property.id} className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 px-3 py-2 text-sm text-slate-200">
+                              <MapPin size={14} className="shrink-0 text-blue-400" />
+                              <span className="truncate">{property.address}</span>
+                              {property.community && <span className="hidden text-slate-500 md:inline">· {property.community}</span>}
                             </span>
-                          )) : <span className="text-sm text-slate-400">No participants selected</span>}
+                          )) : <span className="text-sm text-slate-500">No locations selected</span>}
+                          {extraLocationCount > 0 && <span className="rounded-xl border border-slate-800 bg-slate-950/50 px-3 py-2 text-sm font-semibold text-slate-300">+{extraLocationCount} more</span>}
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <StickyNote size={14} /> {showing.notesTimeline?.length || 0} timeline notes
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Schedule</p>
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/50 px-3 py-2 text-sm text-slate-200">
+                          <div className="flex items-center gap-2"><Clock size={14} className="text-emerald-400" /> {formatShowingDateTime(showing.scheduledAt)}</div>
+                          <div className="mt-1 pl-5 text-xs text-slate-500">Ends {formatShowingDateTime(showing.endScheduledAt)}</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Participants</p>
+                        <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 px-3 py-2 min-h-[42px]">
+                          {visibleParticipants.length > 0 ? (
+                            <>
+                              <div className="flex -space-x-2">
+                                {visibleParticipants.map(contact => (
+                                  <span key={contact.id} title={contact.fullName} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-950 bg-slate-800 text-[11px] font-bold text-slate-200">
+                                    {getInitials(contact.fullName)}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="min-w-0 truncate text-sm text-slate-300">
+                                {visibleParticipants.map(contact => contact.fullName).join(', ')}{extraParticipantCount > 0 ? ` +${extraParticipantCount}` : ''}
+                              </span>
+                            </>
+                          ) : <span className="text-sm text-slate-500">No participants selected</span>}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex shrink-0 gap-2 xl:self-center" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => updateShowingStatus(showing, 'completed')} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all" aria-label="Mark showing completed"><CheckCircle2 size={20} /></button>
-                  <button onClick={() => updateShowingStatus(showing, 'cancelled')} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all" aria-label="Cancel showing"><XCircle size={20} /></button>
-                  <button onClick={() => openEditModal(showing)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all" aria-label="Edit showing"><Edit3 size={20} /></button>
+                <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-800 pt-4 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => updateShowingStatus(showing, 'completed')} className="rounded-xl p-2 text-slate-400 transition-all hover:bg-emerald-500/10 hover:text-emerald-400" aria-label="Mark showing completed"><CheckCircle2 size={20} /></button>
+                  <button onClick={() => updateShowingStatus(showing, 'cancelled')} className="rounded-xl p-2 text-slate-400 transition-all hover:bg-rose-500/10 hover:text-rose-400" aria-label="Cancel showing"><XCircle size={20} /></button>
+                  <button onClick={() => openEditModal(showing)} className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-800 hover:text-white" aria-label="Edit showing"><Edit3 size={20} /></button>
                 </div>
               </div>
             </motion.div>
