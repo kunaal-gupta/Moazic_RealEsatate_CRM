@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
-  Calendar as CalendarIcon, 
   Clock, 
   MapPin, 
   Users, 
@@ -67,6 +66,25 @@ export default function Showings() {
   const getContact = (id: string) => contacts.find(c => c.id === id);
   const getPrimaryProperty = (showing: Partial<Showing>) => getProperty(showing.propertyIds?.[0] || (showing as any).propertyId);
 
+  const getShowingProperties = (showing: Partial<Showing>) => (
+    showing.propertyIds?.map(id => getProperty(id)).filter((property): property is Property => Boolean(property)) || []
+  );
+
+  const getShowingParticipants = (showing: Partial<Showing>) => (
+    showing.participantIds?.map(id => getContact(id)).filter((contact): contact is Contact => Boolean(contact)) || []
+  );
+
+  const formatShowingDateTime = (value?: string) => {
+    if (!value) return 'Not set';
+    return new Date(value).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const visibleShowings = useMemo(() => {
     const today = new Date();
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
@@ -101,18 +119,6 @@ export default function Showings() {
       });
   }, [showings, searchTerm, statusFilter, dateFilter, sortKey, sortDirection, properties, contacts]);
 
-  const overviewCounts = useMemo(() => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const tomorrow = start + 86400000;
-    const dayAfterTomorrow = tomorrow + 86400000;
-    const week = start + (86400000 * 7);
-    return {
-      today: showings.filter(s => new Date(s.scheduledAt).getTime() >= start && new Date(s.scheduledAt).getTime() < tomorrow).length,
-      tomorrow: showings.filter(s => new Date(s.scheduledAt).getTime() >= tomorrow && new Date(s.scheduledAt).getTime() < dayAfterTomorrow).length,
-      week: showings.filter(s => new Date(s.scheduledAt).getTime() >= start && new Date(s.scheduledAt).getTime() < week).length
-    };
-  }, [showings]);
 
   const statusColors = {
     scheduled: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -205,25 +211,88 @@ export default function Showings() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-4">
-          {visibleShowings.map((showing) => {
-            const displayProperty = getPrimaryProperty(showing);
-            return (
-              <motion.div key={showing.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} onClick={() => setSelectedShowing(showing)} className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm flex items-center gap-6 hover:border-blue-500/40 transition-all group cursor-pointer">
-                <div className="w-16 h-16 rounded-xl bg-slate-800 flex flex-col items-center justify-center text-slate-400 border border-slate-700"><span className="text-[10px] font-bold uppercase tracking-widest">{new Date(showing.scheduledAt).toLocaleString('default', { month: 'short' })}</span><span className="text-xl font-bold text-white">{new Date(showing.scheduledAt).getDate()}</span></div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1"><h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all truncate">{displayProperty?.address || 'Property Viewing'} {showing.propertyIds && showing.propertyIds.length > 1 ? `(+${showing.propertyIds.length - 1} more)` : ''}</h3><span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter border", statusColors[showing.status])}>{showing.status}</span></div>
-                  <div className="flex flex-wrap gap-4 text-sm text-slate-400"><div className="flex items-center gap-1.5"><Clock size={14} className="text-slate-500" />{new Date(showing.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}{showing.endScheduledAt && ` - ${new Date(showing.endScheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</div><div className="flex items-center gap-1.5"><MapPin size={14} className="text-slate-500" />{displayProperty?.community || 'N/A'}</div><div className="flex items-center gap-1.5"><Users size={14} className="text-slate-500" />{showing.participantIds?.length || 0} Participants</div><div className="flex items-center gap-1.5"><StickyNote size={14} className="text-slate-500" />{showing.notesTimeline?.length || 0} Timeline Notes</div></div>
-                </div>
-                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}><button onClick={() => updateShowingStatus(showing, 'completed')} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all"><CheckCircle2 size={20} /></button><button onClick={() => updateShowingStatus(showing, 'cancelled')} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"><XCircle size={20} /></button><button onClick={() => openEditModal(showing)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"><Edit3 size={20} /></button></div>
-              </motion.div>
-            );
-          })}
-          {visibleShowings.length === 0 && <div className="bg-slate-900/50 border border-slate-800 p-10 rounded-2xl text-center text-slate-400">No showings match the selected filters.</div>}
-        </div>
+      <div className="space-y-4">
+        {visibleShowings.map((showing) => {
+          const showingProperties = getShowingProperties(showing);
+          const showingParticipants = getShowingParticipants(showing);
+          const locationSummary = showingProperties.length
+            ? showingProperties.map(property => `${property.address}${property.community ? ` · ${property.community}` : ''}`).join(' • ')
+            : 'No locations selected';
 
-        <div className="space-y-6"><div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm"><h3 className="font-bold text-white mb-4 flex items-center gap-2"><CalendarIcon size={18} className="text-blue-500" />Upcoming Overview</h3><div className="space-y-4">{[['Today', overviewCounts.today], ['Tomorrow', overviewCounts.tomorrow], ['This Week', overviewCounts.week]].map(([label, count]) => <div key={label} className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl border border-slate-700"><span className="text-sm text-slate-400">{label}</span><span className="text-sm font-bold text-white">{count} Showings</span></div>)}</div></div></div>
+          return (
+            <motion.div
+              key={showing.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => setSelectedShowing(showing)}
+              className="w-full bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm hover:border-blue-500/40 transition-all group cursor-pointer"
+            >
+              <div className="flex flex-col xl:flex-row xl:items-center gap-6">
+                <div className="flex items-start gap-4 min-w-0 flex-1">
+                  <div className="w-16 h-16 shrink-0 rounded-xl bg-slate-800 flex flex-col items-center justify-center text-slate-400 border border-slate-700">
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                      {new Date(showing.scheduledAt).toLocaleString('default', { month: 'short' })}
+                    </span>
+                    <span className="text-xl font-bold text-white">
+                      {new Date(showing.scheduledAt).getDate()}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">
+                        {showingProperties.length === 1 ? showingProperties[0].address : `${showingProperties.length || 'No'} Showing Locations`}
+                      </h3>
+                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", statusColors[showing.status])}>
+                        {showing.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Locations</p>
+                        <div className="flex items-start gap-2 text-sm text-slate-200">
+                          <MapPin size={15} className="mt-0.5 shrink-0 text-blue-400" />
+                          <span>{locationSummary}</span>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Schedule</p>
+                        <div className="space-y-1 text-sm text-slate-200">
+                          <div className="flex items-center gap-2"><Clock size={14} className="text-emerald-400" /> Start: {formatShowingDateTime(showing.scheduledAt)}</div>
+                          <div className="flex items-center gap-2"><Clock size={14} className="text-rose-400" /> End: {formatShowingDateTime(showing.endScheduledAt)}</div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Participants</p>
+                        <div className="flex flex-wrap gap-2">
+                          {showingParticipants.length > 0 ? showingParticipants.map(contact => (
+                            <span key={contact.id} className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 border border-slate-700">
+                              <Users size={12} className="text-slate-400" /> {contact.fullName}
+                            </span>
+                          )) : <span className="text-sm text-slate-400">No participants selected</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <StickyNote size={14} /> {showing.notesTimeline?.length || 0} timeline notes
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 gap-2 xl:self-center" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => updateShowingStatus(showing, 'completed')} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all" aria-label="Mark showing completed"><CheckCircle2 size={20} /></button>
+                  <button onClick={() => updateShowingStatus(showing, 'cancelled')} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all" aria-label="Cancel showing"><XCircle size={20} /></button>
+                  <button onClick={() => openEditModal(showing)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all" aria-label="Edit showing"><Edit3 size={20} /></button>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+        {visibleShowings.length === 0 && <div className="bg-slate-900/50 border border-slate-800 p-10 rounded-2xl text-center text-slate-400">No showings match the selected filters.</div>}
       </div>
 
       <AnimatePresence>{selectedShowing && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedShowing(null)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"><div className="p-6 border-b border-slate-800 flex items-center justify-between"><div><h2 className="text-xl font-bold text-white">Showing Details</h2><p className="text-sm text-slate-400">{getPrimaryProperty(selectedShowing)?.address || 'Property Viewing'}</p></div><div className="flex gap-2"><button onClick={() => openEditModal(selectedShowing)} className="px-3 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700 flex items-center gap-2"><Edit3 size={16} /> Edit</button><button onClick={() => setSelectedShowing(null)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><XCircle size={20} /></button></div></div><div className="p-6 space-y-6"><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Status</p><p className="text-white capitalize">{selectedShowing.status}</p></div><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Time</p><p className="text-white">{new Date(selectedShowing.scheduledAt).toLocaleString()} {selectedShowing.endScheduledAt && `- ${new Date(selectedShowing.endScheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</p></div><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Properties</p><p className="text-white">{selectedShowing.propertyIds?.map(id => getProperty(id)?.address).filter(Boolean).join(', ') || 'N/A'}</p></div><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Participants</p><p className="text-white">{selectedShowing.participantIds?.map(id => getContact(id)?.fullName).filter(Boolean).join(', ') || 'None'}</p></div></div>{selectedShowing.notes && <div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold mb-1">General Notes</p><p className="text-slate-300">{selectedShowing.notes}</p></div>}<div><h3 className="font-bold text-white mb-3">Timeline Notes</h3><div className="flex gap-2 mb-4"><input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Add a timeline note..." className="flex-1 bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /><button onClick={addTimelineNote} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500">Add</button></div><div className="space-y-3 border-l border-slate-700 pl-4">{(selectedShowing.notesTimeline || []).map(note => <div key={note.id} className="relative"><span className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-slate-900" /><p className="text-sm text-white">{note.note}</p><p className="text-xs text-slate-500">{new Date(note.createdAt).toLocaleString()}</p></div>)}{!selectedShowing.notesTimeline?.length && <p className="text-sm text-slate-500">No timeline notes yet.</p>}</div></div></div></motion.div></div>}</AnimatePresence>
