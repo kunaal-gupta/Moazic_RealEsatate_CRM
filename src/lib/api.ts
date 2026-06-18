@@ -79,6 +79,7 @@ export const api = {
   showings: {
     list: () => fetcher<Showing[]>('/showings'),
     create: (data: Partial<Showing>) => fetcher<Showing>('/showings', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Showing>) => fetcher<Showing>(`/showings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   emailTemplates: {
     list: () => fetcher<EmailTemplate[]>('/emailTemplates'),

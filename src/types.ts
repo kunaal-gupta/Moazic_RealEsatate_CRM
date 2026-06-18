@@ -156,6 +156,12 @@ export interface Task {
   createdAt: string;
 }
 
+export interface ShowingNote {
+  id: string;
+  note: string;
+  createdAt: string;
+}
+
 export interface Showing {
   id: string;
   propertyIds: string[];
@@ -164,6 +170,7 @@ export interface Showing {
   endScheduledAt: string;
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
+  notesTimeline?: ShowingNote[];
   participantIds: string[];
 }
 
