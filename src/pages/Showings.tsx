@@ -215,10 +215,6 @@ export default function Showings() {
         {visibleShowings.map((showing) => {
           const showingProperties = getShowingProperties(showing);
           const showingParticipants = getShowingParticipants(showing);
-          const locationSummary = showingProperties.length
-            ? showingProperties.map(property => `${property.address}${property.community ? ` · ${property.community}` : ''}`).join(' • ')
-            : 'No locations selected';
-
           return (
             <motion.div
               key={showing.id}
@@ -251,9 +247,16 @@ export default function Showings() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                       <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Locations</p>
-                        <div className="flex items-start gap-2 text-sm text-slate-200">
-                          <MapPin size={15} className="mt-0.5 shrink-0 text-blue-400" />
-                          <span>{locationSummary}</span>
+                        <div className="flex flex-wrap gap-2">
+                          {showingProperties.length > 0 ? showingProperties.map(property => (
+                            <span key={property.id} className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-slate-100 border border-blue-400/30 shadow-sm shadow-blue-950/20">
+                              <MapPin size={12} className="text-blue-300" /> {property.address}
+                            </span>
+                          )) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-400 border border-slate-700">
+                              <MapPin size={12} className="text-slate-500" /> No locations selected
+                            </span>
+                          )}
                         </div>
                       </div>
 
