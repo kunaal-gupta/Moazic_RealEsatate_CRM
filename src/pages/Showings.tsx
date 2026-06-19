@@ -40,6 +40,8 @@ export default function Showings() {
   const [editingShowing, setEditingShowing] = useState<Showing | null>(null);
   const [loading, setLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ShowingStatus>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'upcoming' | 'past' | 'today'>('all');
@@ -169,15 +171,40 @@ export default function Showings() {
     setSelectedShowing(prev => prev?.id === showing.id ? updatedShowing : prev);
   };
 
+  const syncSelectedShowing = (updatedShowing: Showing) => {
+    setShowings(showings.map(item => item.id === updatedShowing.id ? updatedShowing : item));
+    setSelectedShowing(updatedShowing);
+  };
+
   const addTimelineNote = async () => {
     if (!selectedShowing || !newNote.trim()) return;
     const note = { id: Math.random().toString(36).slice(2, 9), note: newNote.trim(), createdAt: new Date().toISOString() };
     const updatedShowing = await api.showings.update(selectedShowing.id, {
       notesTimeline: [note, ...(selectedShowing.notesTimeline || [])]
     });
-    setShowings(showings.map(item => item.id === updatedShowing.id ? updatedShowing : item));
-    setSelectedShowing(updatedShowing);
+    syncSelectedShowing(updatedShowing);
     setNewNote('');
+  };
+
+  const startEditingNote = (noteId: string, noteText: string) => {
+    setEditingNoteId(noteId);
+    setEditingNoteText(noteText);
+  };
+
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteText('');
+  };
+
+  const saveTimelineNote = async (noteId: string) => {
+    if (!selectedShowing || !editingNoteText.trim()) return;
+    const updatedShowing = await api.showings.update(selectedShowing.id, {
+      notesTimeline: (selectedShowing.notesTimeline || []).map(note => (
+        note.id === noteId ? { ...note, note: editingNoteText.trim() } : note
+      ))
+    });
+    syncSelectedShowing(updatedShowing);
+    cancelEditingNote();
   };
 
   return (
@@ -298,7 +325,109 @@ export default function Showings() {
         {visibleShowings.length === 0 && <div className="bg-slate-900/50 border border-slate-800 p-10 rounded-2xl text-center text-slate-400">No showings match the selected filters.</div>}
       </div>
 
-      <AnimatePresence>{selectedShowing && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedShowing(null)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"><div className="p-6 border-b border-slate-800 flex items-center justify-between"><div><h2 className="text-xl font-bold text-white">Showing Details</h2><p className="text-sm text-slate-400">{getPrimaryProperty(selectedShowing)?.address || 'Property Viewing'}</p></div><div className="flex gap-2"><button onClick={() => openEditModal(selectedShowing)} className="px-3 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700 flex items-center gap-2"><Edit3 size={16} /> Edit</button><button onClick={() => setSelectedShowing(null)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><XCircle size={20} /></button></div></div><div className="p-6 space-y-6"><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Status</p><p className="text-white capitalize">{selectedShowing.status}</p></div><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Time</p><p className="text-white">{new Date(selectedShowing.scheduledAt).toLocaleString()} {selectedShowing.endScheduledAt && `- ${new Date(selectedShowing.endScheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</p></div><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Properties</p><p className="text-white">{selectedShowing.propertyIds?.map(id => getProperty(id)?.address).filter(Boolean).join(', ') || 'N/A'}</p></div><div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold">Participants</p><p className="text-white">{selectedShowing.participantIds?.map(id => getContact(id)?.fullName).filter(Boolean).join(', ') || 'None'}</p></div></div>{selectedShowing.notes && <div className="p-4 bg-slate-800/50 rounded-xl"><p className="text-slate-500 uppercase text-[10px] font-bold mb-1">General Notes</p><p className="text-slate-300">{selectedShowing.notes}</p></div>}<div><h3 className="font-bold text-white mb-3">Timeline Notes</h3><div className="flex gap-2 mb-4"><input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Add a timeline note..." className="flex-1 bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /><button onClick={addTimelineNote} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500">Add</button></div><div className="space-y-3 border-l border-slate-700 pl-4">{(selectedShowing.notesTimeline || []).map(note => <div key={note.id} className="relative"><span className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-slate-900" /><p className="text-sm text-white">{note.note}</p><p className="text-xs text-slate-500">{new Date(note.createdAt).toLocaleString()}</p></div>)}{!selectedShowing.notesTimeline?.length && <p className="text-sm text-slate-500">No timeline notes yet.</p>}</div></div></div></motion.div></div>}</AnimatePresence>
+      <AnimatePresence>{selectedShowing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              setSelectedShowing(null);
+              cancelEditingNote();
+            }}
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"
+          >
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/70">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Showing Notes</p>
+                <h2 className="text-xl font-bold text-white">Timeline & Follow-ups</h2>
+                <p className="text-sm text-slate-400">Add updates, client feedback, and next steps for this showing.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedShowing(null);
+                  cancelEditingNote();
+                }}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add Timeline Note</label>
+                <textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Write a clear note, client feedback, or next action..."
+                  className="mt-3 w-full min-h-[110px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={addTimelineNote}
+                    disabled={!newNote.trim()}
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Add Note
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-white">Notes Timeline</h3>
+                  <span className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    {selectedShowing.notesTimeline?.length || 0} notes
+                  </span>
+                </div>
+
+                <div className="space-y-4 border-l border-slate-700 pl-5">
+                  {(selectedShowing.notesTimeline || []).map(note => (
+                    <div key={note.id} className="relative rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+                      <span className="absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-slate-900 shadow-lg shadow-blue-500/30" />
+                      {editingNoteId === note.id ? (
+                        <div className="space-y-3">
+                          <textarea
+                            value={editingNoteText}
+                            onChange={(e) => setEditingNoteText(e.target.value)}
+                            className="w-full min-h-[90px] bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button onClick={cancelEditingNote} className="px-3 py-2 bg-slate-800 text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-700">Cancel</button>
+                            <button onClick={() => saveTimelineNote(note.id)} disabled={!editingNoteText.trim()} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">Save Note</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm leading-6 text-slate-100">{note.note}</p>
+                            <button onClick={() => startEditingNote(note.id, note.note)} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800">
+                              <Edit3 size={13} /> Edit
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-500">{new Date(note.createdAt).toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {!selectedShowing.notesTimeline?.length && (
+                    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/30 p-6 text-center text-sm text-slate-500">
+                      No timeline notes yet. Add the first professional follow-up note above.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}</AnimatePresence>
 
       <AnimatePresence>{isModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setIsModalOpen(false); resetForm(); }} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden"><div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50"><h2 className="text-xl font-bold text-white">{editingShowing ? 'Edit Showing' : 'Schedule New Showing'}</h2><button onClick={() => { setIsModalOpen(false); resetForm(); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><XCircle size={20} /></button></div><form onSubmit={saveShowing} className="p-8 space-y-6"><MultiSelect label="PROPERTIES" options={propertyOptions} selectedIds={showingForm.propertyIds || []} onChange={(ids) => setShowingForm({ ...showingForm, propertyIds: ids })} placeholder="Select properties to show..." /><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Start Time</label><input required type="datetime-local" value={showingForm.scheduledAt} onChange={(e) => setShowingForm({ ...showingForm, scheduledAt: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /></div><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">End Time</label><input required type="datetime-local" value={showingForm.endScheduledAt} onChange={(e) => setShowingForm({ ...showingForm, endScheduledAt: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /></div></div><select value={showingForm.status} onChange={(e) => setShowingForm({ ...showingForm, status: e.target.value as ShowingStatus })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select><MultiSelect label="PARTICIPANTS" options={contactOptions} selectedIds={showingForm.participantIds || []} onChange={(ids) => setShowingForm({ ...showingForm, participantIds: ids })} placeholder="Select participants..." /><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Notes</label><textarea value={showingForm.notes} onChange={(e) => setShowingForm({ ...showingForm, notes: e.target.value })} placeholder="Any special instructions..." className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[80px]" /></div><div className="pt-4 flex justify-end gap-3"><button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700">Cancel</button><button type="submit" disabled={loading || !showingForm.scheduledAt || !showingForm.endScheduledAt || !showingForm.propertyIds?.length} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Saving...' : editingShowing ? 'Save Changes' : 'Schedule Showing'}</button></div></form></motion.div></div>}</AnimatePresence>
     </div>
