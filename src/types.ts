@@ -160,6 +160,7 @@ export interface ShowingNote {
   id: string;
   note: string;
   createdAt: string;
+  propertyId?: string;
 }
 
 export interface Showing {
