@@ -146,3 +146,98 @@
     @apply font-sans;
     }
 }
+@layer utilities {
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html:not(.dark) body {
+    background:
+      radial-gradient(circle at top left, rgb(239 246 255 / 0.7), transparent 34rem),
+      linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  html:not(.dark) [class*="bg-slate-950"],
+  html:not(.dark) [class*="bg-slate-900"] {
+    background-color: rgb(255 255 255 / 0.92) !important;
+  }
+
+  html:not(.dark) [class*="bg-slate-800"] {
+    background-color: rgb(248 250 252 / 0.9) !important;
+  }
+
+  html:not(.dark) [class*="bg-slate-700"] {
+    background-color: rgb(226 232 240 / 0.9) !important;
+  }
+
+  html:not(.dark) [class*="border-slate-900"],
+  html:not(.dark) [class*="border-slate-800"],
+  html:not(.dark) [class*="border-slate-700"] {
+    border-color: rgb(203 213 225 / 0.9) !important;
+  }
+
+  html:not(.dark) [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgb(203 213 225 / 0.72) !important;
+  }
+
+  html:not(.dark) [class*="text-slate-600"] {
+    color: #475569 !important;
+  }
+
+  html:not(.dark) [class*="text-slate-500"] {
+    color: #64748b !important;
+  }
+
+  html:not(.dark) [class*="text-slate-400"] {
+    color: #475569 !important;
+  }
+
+  html:not(.dark) [class*="text-slate-300"],
+  html:not(.dark) [class*="text-slate-200"],
+  html:not(.dark) [class*="text-slate-100"] {
+    color: #1e293b !important;
+  }
+
+  html:not(.dark) .text-white {
+    color: #0f172a !important;
+  }
+
+  html:not(.dark) [class*="bg-blue-"].text-white,
+  html:not(.dark) [class*="bg-indigo-"].text-white,
+  html:not(.dark) [class*="bg-emerald-"].text-white,
+  html:not(.dark) [class*="bg-rose-"].text-white,
+  html:not(.dark) [class*="bg-red-"].text-white,
+  html:not(.dark) [class*="bg-gradient-to"].text-white,
+  html:not(.dark) [class*="bg-blue-"] .text-white,
+  html:not(.dark) [class*="bg-indigo-"] .text-white,
+  html:not(.dark) [class*="bg-gradient-to"] .text-white,
+  html:not(.dark) .shadow-blue-500\/20.text-white,
+  html:not(.dark) .shadow-blue-500\/30.text-white {
+    color: #fff !important;
+  }
+
+  html:not(.dark) input,
+  html:not(.dark) select,
+  html:not(.dark) textarea {
+    background-color: rgb(255 255 255 / 0.96) !important;
+    border-color: rgb(203 213 225 / 0.9) !important;
+    color: #0f172a !important;
+  }
+
+  html:not(.dark) input::placeholder,
+  html:not(.dark) textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}

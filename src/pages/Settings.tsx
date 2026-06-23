@@ -19,9 +19,9 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'general'>('users');
 
   const users = [
-    { id: 'u1', name: 'Kunaal Gupta', email: 'kunaal@luxecrm.com', role: 'Super Admin', status: 'active' },
-    { id: 'u2', name: 'Jane Doe', email: 'jane@luxecrm.com', role: 'Agent', status: 'active' },
-    { id: 'u3', name: 'Michael Smith', email: 'michael@luxecrm.com', role: 'Agent', status: 'inactive' },
+    { id: 'u1', name: 'Kunaal Gupta', email: 'kunaal@sollace.com', role: 'Super Admin', status: 'active' },
+    { id: 'u2', name: 'Jane Doe', email: 'jane@sollace.com', role: 'Agent', status: 'active' },
+    { id: 'u3', name: 'Michael Smith', email: 'michael@sollace.com', role: 'Agent', status: 'inactive' },
   ];
 
   return (
@@ -81,7 +81,7 @@ export default function Settings() {
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h3 className="text-xl font-bold text-white">Team Members</h3>
-                  <p className="text-sm text-slate-500">Manage who has access to LuxeCRM.</p>
+                  <p className="text-sm text-slate-500">Manage who has access to Sollace.</p>
                 </div>
                 <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
                   <Plus size={18} /> Invite User
@@ -164,7 +164,7 @@ export default function Settings() {
                   <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest">Company Name</label>
                   <input 
                     type="text" 
-                    defaultValue="Luxe Real Estate Group"
+                    defaultValue="Sollace Real Estate Group"
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
