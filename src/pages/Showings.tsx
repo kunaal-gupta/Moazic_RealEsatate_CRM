@@ -9,11 +9,13 @@ import {
   Edit3,
   Search,
   ArrowUpDown,
-  StickyNote
+  StickyNote,
+  ChevronDown,
+  Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
-import { Showing, Property, Contact } from '../types';
+import { Showing, ShowingNote, Property, Contact } from '../types';
 import { cn } from '../lib/utils';
 import MultiSelect from '../components/MultiSelect';
 
@@ -40,6 +42,8 @@ export default function Showings() {
   const [editingShowing, setEditingShowing] = useState<Showing | null>(null);
   const [loading, setLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [newNotePropertyId, setNewNotePropertyId] = useState<string>('general');
+  const [savingNote, setSavingNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +52,7 @@ export default function Showings() {
   const [sortKey, setSortKey] = useState<SortKey>('scheduledAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showingForm, setShowingForm] = useState<ShowingFormState>(emptyShowingForm);
+  const [expandedShowingIds, setExpandedShowingIds] = useState<Set<string>>(new Set());
 
   const propertyOptions = properties.map(p => ({ id: p.id, name: `${p.address} (${p.community})` }));
   const contactOptions = contacts.map(c => ({ id: c.id, name: c.fullName }));
@@ -96,7 +101,8 @@ export default function Showings() {
       .filter((showing) => {
         const propertyNames = showing.propertyIds?.map(id => getProperty(id)?.address || '').join(' ') || '';
         const participantNames = showing.participantIds?.map(id => getContact(id)?.fullName || '').join(' ') || '';
-        const searchable = `${propertyNames} ${participantNames} ${showing.status} ${showing.notes || ''}`.toLowerCase();
+        const timelineNotes = showing.notesTimeline?.map(note => note.note).join(' ') || '';
+        const searchable = `${propertyNames} ${participantNames} ${showing.status} ${showing.notes || ''} ${timelineNotes}`.toLowerCase();
         const scheduledTime = new Date(showing.scheduledAt).getTime();
         const matchesSearch = searchable.includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || showing.status === statusFilter;
@@ -138,6 +144,25 @@ export default function Showings() {
     setIsModalOpen(true);
   };
 
+  const openNotesModal = (showing: Showing) => {
+    setSelectedShowing(showing);
+    setNewNote('');
+    setNewNotePropertyId('general');
+    cancelEditingNote();
+  };
+
+  const toggleShowingExpanded = (showingId: string) => {
+    setExpandedShowingIds(prev => {
+      const next = new Set(prev);
+      if (next.has(showingId)) {
+        next.delete(showingId);
+      } else {
+        next.add(showingId);
+      }
+      return next;
+    });
+  };
+
   const openEditModal = (showing: Showing) => {
     setEditingShowing(showing);
     setShowingForm({ ...showing, propertyIds: showing.propertyIds || [], participantIds: showing.participantIds || [] });
@@ -172,19 +197,38 @@ export default function Showings() {
   };
 
   const syncSelectedShowing = (updatedShowing: Showing) => {
-    setShowings(showings.map(item => item.id === updatedShowing.id ? updatedShowing : item));
+    setShowings(prev => prev.map(item => item.id === updatedShowing.id ? updatedShowing : item));
     setSelectedShowing(updatedShowing);
   };
 
   const addTimelineNote = async () => {
-    if (!selectedShowing || !newNote.trim()) return;
-    const note = { id: Math.random().toString(36).slice(2, 9), note: newNote.trim(), createdAt: new Date().toISOString() };
-    const updatedShowing = await api.showings.update(selectedShowing.id, {
-      notesTimeline: [note, ...(selectedShowing.notesTimeline || [])]
-    });
-    syncSelectedShowing(updatedShowing);
-    setNewNote('');
+    if (!selectedShowing || !newNote.trim() || savingNote) return;
+    setSavingNote(true);
+    try {
+      const showingProperties = getShowingProperties(selectedShowing);
+      const selectedPropertyId = newNotePropertyId !== 'general' && showingProperties.some(property => property.id === newNotePropertyId)
+        ? newNotePropertyId
+        : undefined;
+      const note: ShowingNote = {
+        id: Math.random().toString(36).slice(2, 9),
+        note: newNote.trim(),
+        createdAt: new Date().toISOString(),
+        ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {})
+      };
+      const updatedShowing = await api.showings.update(selectedShowing.id, {
+        notesTimeline: [note, ...(selectedShowing.notesTimeline || [])]
+      });
+      syncSelectedShowing(updatedShowing);
+      setNewNote('');
+      setNewNotePropertyId('general');
+    } catch (error) {
+      console.error('Failed to add showing note:', error);
+    } finally {
+      setSavingNote(false);
+    }
   };
+
+  const getNoteProperty = (note: ShowingNote) => getProperty(note.propertyId);
 
   const startEditingNote = (noteId: string, noteText: string) => {
     setEditingNoteId(noteId);
@@ -242,83 +286,129 @@ export default function Showings() {
         {visibleShowings.map((showing) => {
           const showingProperties = getShowingProperties(showing);
           const showingParticipants = getShowingParticipants(showing);
+          const isExpanded = expandedShowingIds.has(showing.id);
+          const startDateLabel = formatShowingDateTime(showing.scheduledAt);
+
           return (
             <motion.div
               key={showing.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              onClick={() => setSelectedShowing(showing)}
-              className="w-full bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm hover:border-blue-500/40 transition-all group cursor-pointer"
+              className="w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all group hover:border-blue-500/40"
             >
-              <div className="flex flex-col xl:flex-row xl:items-center gap-6">
-                <div className="flex items-start gap-4 min-w-0 flex-1">
-                  <div className="w-16 h-16 shrink-0 rounded-xl bg-slate-800 flex flex-col items-center justify-center text-slate-400 border border-slate-700">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">
-                      {new Date(showing.scheduledAt).toLocaleString('default', { month: 'short' })}
-                    </span>
-                    <span className="text-xl font-bold text-white">
-                      {new Date(showing.scheduledAt).getDate()}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">
-                        {showingProperties.length === 1 ? showingProperties[0].address : `${showingProperties.length || 'No'} Showing Locations`}
-                      </h3>
-                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", statusColors[showing.status])}>
-                        {showing.status}
+              <button
+                type="button"
+                onClick={() => toggleShowingExpanded(showing.id)}
+                className="w-full p-5 text-left"
+                aria-expanded={isExpanded}
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="flex items-start gap-4 min-w-0">
+                    <div className="w-16 h-16 shrink-0 rounded-xl bg-slate-800 flex flex-col items-center justify-center text-slate-400 border border-slate-700">
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {new Date(showing.scheduledAt).toLocaleString('default', { month: 'short' })}
+                      </span>
+                      <span className="text-xl font-bold text-white">
+                        {new Date(showing.scheduledAt).getDate()}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Locations</p>
-                        <div className="flex flex-wrap gap-2">
-                          {showingProperties.length > 0 ? showingProperties.map(property => (
-                            <span key={property.id} className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-slate-100 border border-blue-400/30 shadow-sm shadow-blue-950/20">
-                              <MapPin size={12} className="text-blue-300" /> {property.address}
-                            </span>
-                          )) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-400 border border-slate-700">
-                              <MapPin size={12} className="text-slate-500" /> No locations selected
-                            </span>
-                          )}
-                        </div>
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-all">
+                          {showingProperties.length === 1 ? showingProperties[0].address : `${showingProperties.length || 'No'} Showing Locations`}
+                        </h3>
+                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", statusColors[showing.status])}>
+                          {showing.status}
+                        </span>
                       </div>
-
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Schedule</p>
-                        <div className="space-y-1 text-sm text-slate-200">
-                          <div className="flex items-center gap-2"><Clock size={14} className="text-emerald-400" /> Start: {formatShowingDateTime(showing.scheduledAt)}</div>
-                          <div className="flex items-center gap-2"><Clock size={14} className="text-rose-400" /> End: {formatShowingDateTime(showing.endScheduledAt)}</div>
-                        </div>
+                      <div className="grid grid-cols-1 gap-2 text-sm text-slate-300 sm:grid-cols-3">
+                        <span className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2">
+                          <Home size={14} className="text-blue-300" /> {showingProperties.length} homes
+                        </span>
+                        <span className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2">
+                          <Users size={14} className="text-emerald-300" /> {showingParticipants.length} participants
+                        </span>
+                        <span className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2">
+                          <Clock size={14} className="text-amber-300" /> {startDateLabel}
+                        </span>
                       </div>
-
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Participants</p>
-                        <div className="flex flex-wrap gap-2">
-                          {showingParticipants.length > 0 ? showingParticipants.map(contact => (
-                            <span key={contact.id} className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 border border-slate-700">
-                              <Users size={12} className="text-slate-400" /> {contact.fullName}
-                            </span>
-                          )) : <span className="text-sm text-slate-400">No participants selected</span>}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <StickyNote size={14} /> {showing.notesTimeline?.length || 0} timeline notes
                     </div>
                   </div>
-                </div>
 
-                <div className="flex shrink-0 gap-2 xl:self-center" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => updateShowingStatus(showing, 'completed')} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all" aria-label="Mark showing completed"><CheckCircle2 size={20} /></button>
-                  <button onClick={() => updateShowingStatus(showing, 'cancelled')} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all" aria-label="Cancel showing"><XCircle size={20} /></button>
-                  <button onClick={() => openEditModal(showing)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all" aria-label="Edit showing"><Edit3 size={20} /></button>
+                  <div className="flex items-center justify-between gap-3 text-xs text-slate-500 xl:justify-end">
+                    <span className="inline-flex items-center gap-2">
+                      <StickyNote size={14} /> {showing.notesTimeline?.length || 0} timeline notes
+                    </span>
+                    <ChevronDown className={cn("text-slate-400 transition-transform", isExpanded && "rotate-180")} size={20} />
+                  </div>
                 </div>
-              </div>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden border-t border-slate-800"
+                  >
+                    <div className="p-5 space-y-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Locations</p>
+                          <div className="flex flex-wrap gap-2">
+                            {showingProperties.length > 0 ? showingProperties.map(property => (
+                              <span key={property.id} className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-slate-100 border border-blue-400/30 shadow-sm shadow-blue-950/20">
+                                <MapPin size={12} className="text-blue-300" /> {property.address}
+                              </span>
+                            )) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-400 border border-slate-700">
+                                <MapPin size={12} className="text-slate-500" /> No locations selected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Schedule</p>
+                          <div className="space-y-1 text-sm text-slate-200">
+                            <div className="flex items-center gap-2"><Clock size={14} className="text-emerald-400" /> Start: {formatShowingDateTime(showing.scheduledAt)}</div>
+                            <div className="flex items-center gap-2"><Clock size={14} className="text-rose-400" /> End: {formatShowingDateTime(showing.endScheduledAt)}</div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Participants</p>
+                          <div className="flex flex-wrap gap-2">
+                            {showingParticipants.length > 0 ? showingParticipants.map(contact => (
+                              <span key={contact.id} className="inline-flex items-center gap-1 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 border border-slate-700">
+                                <Users size={12} className="text-slate-400" /> {contact.fullName}
+                              </span>
+                            )) : <span className="text-sm text-slate-400">No participants selected</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button type="button" onClick={() => openNotesModal(showing)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500">
+                          <StickyNote size={16} /> Add Notes
+                        </button>
+                        <button type="button" onClick={() => updateShowingStatus(showing, 'completed')} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-emerald-500/10 hover:text-emerald-400">
+                          <CheckCircle2 size={16} /> Complete
+                        </button>
+                        <button type="button" onClick={() => updateShowingStatus(showing, 'cancelled')} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-rose-500/10 hover:text-rose-400">
+                          <XCircle size={16} /> Cancel
+                        </button>
+                        <button type="button" onClick={() => openEditModal(showing)} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-slate-700 hover:text-white">
+                          <Edit3 size={16} /> Edit
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           );
         })}
@@ -361,24 +451,49 @@ export default function Showings() {
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add Timeline Note</label>
-                <textarea
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Write a clear note, client feedback, or next action..."
-                  className="mt-3 w-full min-h-[110px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
-                <div className="mt-3 flex justify-end">
-                  <button
-                    onClick={addTimelineNote}
-                    disabled={!newNote.trim()}
-                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Add Note
-                  </button>
-                </div>
-              </div>
+              {(() => {
+                const selectedShowingProperties = getShowingProperties(selectedShowing);
+
+                return (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add Timeline Note</label>
+                        <p className="mt-1 text-xs text-slate-500">Attach feedback to the whole showing or to one specific property.</p>
+                      </div>
+                      <div className="min-w-[220px] space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Note Scope</label>
+                        <select
+                          value={newNotePropertyId}
+                          onChange={(e) => setNewNotePropertyId(e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        >
+                          <option value="general">General showing note</option>
+                          {selectedShowingProperties.map(property => (
+                            <option key={property.id} value={property.id}>{property.address}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Write a clear note, client feedback, or next action..."
+                      className="mt-3 w-full min-h-[110px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={addTimelineNote}
+                        disabled={!newNote.trim() || savingNote}
+                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingNote ? 'Adding...' : 'Add Note'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -406,6 +521,17 @@ export default function Showings() {
                         </div>
                       ) : (
                         <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {getNoteProperty(note) ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-200">
+                                <MapPin size={12} /> {getNoteProperty(note)?.address}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                General Showing
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-start justify-between gap-3">
                             <p className="text-sm leading-6 text-slate-100">{note.note}</p>
                             <button onClick={() => startEditingNote(note.id, note.note)} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800">
