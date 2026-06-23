@@ -356,7 +356,7 @@ export default function Showings() {
                   >
                     <div className="p-5 space-y-4">
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <div className="rounded-xl bg-slate-950/40 p-3">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Locations</p>
                           <div className="flex flex-wrap gap-2">
                             {showingProperties.length > 0 ? showingProperties.map(property => (
@@ -371,7 +371,7 @@ export default function Showings() {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <div className="rounded-xl bg-slate-950/40 p-3">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Schedule</p>
                           <div className="space-y-1 text-sm text-slate-200">
                             <div className="flex items-center gap-2"><Clock size={14} className="text-emerald-400" /> Start: {formatShowingDateTime(showing.scheduledAt)}</div>
@@ -379,7 +379,7 @@ export default function Showings() {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <div className="rounded-xl bg-slate-950/40 p-3">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Participants</p>
                           <div className="flex flex-wrap gap-2">
                             {showingParticipants.length > 0 ? showingParticipants.map(contact => (
