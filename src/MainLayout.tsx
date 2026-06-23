@@ -95,16 +95,16 @@ export default function MainLayout() {
               className="flex items-center gap-2"
             >
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/30">
-                L
+                S
               </div>
               <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                LuxeCRM
+                Sollace
               </span>
             </motion.div>
           )}
           {collapsed && (
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white mx-auto">
-              L
+              S
             </div>
           )}
         </div>
