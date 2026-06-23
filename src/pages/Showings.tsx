@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
-import { Showing, Property, Contact } from '../types';
+import { Showing, ShowingNote, Property, Contact } from '../types';
 import { cn } from '../lib/utils';
 import MultiSelect from '../components/MultiSelect';
 
@@ -40,6 +40,7 @@ export default function Showings() {
   const [editingShowing, setEditingShowing] = useState<Showing | null>(null);
   const [loading, setLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [newNotePropertyId, setNewNotePropertyId] = useState<string>('general');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -96,7 +97,8 @@ export default function Showings() {
       .filter((showing) => {
         const propertyNames = showing.propertyIds?.map(id => getProperty(id)?.address || '').join(' ') || '';
         const participantNames = showing.participantIds?.map(id => getContact(id)?.fullName || '').join(' ') || '';
-        const searchable = `${propertyNames} ${participantNames} ${showing.status} ${showing.notes || ''}`.toLowerCase();
+        const timelineNotes = showing.notesTimeline?.map(note => note.note).join(' ') || '';
+        const searchable = `${propertyNames} ${participantNames} ${showing.status} ${showing.notes || ''} ${timelineNotes}`.toLowerCase();
         const scheduledTime = new Date(showing.scheduledAt).getTime();
         const matchesSearch = searchable.includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || showing.status === statusFilter;
@@ -178,13 +180,25 @@ export default function Showings() {
 
   const addTimelineNote = async () => {
     if (!selectedShowing || !newNote.trim()) return;
-    const note = { id: Math.random().toString(36).slice(2, 9), note: newNote.trim(), createdAt: new Date().toISOString() };
+    const showingProperties = getShowingProperties(selectedShowing);
+    const selectedPropertyId = newNotePropertyId !== 'general' && showingProperties.some(property => property.id === newNotePropertyId)
+      ? newNotePropertyId
+      : undefined;
+    const note = {
+      id: Math.random().toString(36).slice(2, 9),
+      note: newNote.trim(),
+      createdAt: new Date().toISOString(),
+      ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {})
+    };
     const updatedShowing = await api.showings.update(selectedShowing.id, {
       notesTimeline: [note, ...(selectedShowing.notesTimeline || [])]
     });
     syncSelectedShowing(updatedShowing);
     setNewNote('');
+    setNewNotePropertyId('general');
   };
+
+  const getNoteProperty = (note: ShowingNote) => getProperty(note.propertyId);
 
   const startEditingNote = (noteId: string, noteText: string) => {
     setEditingNoteId(noteId);
@@ -361,24 +375,48 @@ export default function Showings() {
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add Timeline Note</label>
-                <textarea
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Write a clear note, client feedback, or next action..."
-                  className="mt-3 w-full min-h-[110px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
-                <div className="mt-3 flex justify-end">
-                  <button
-                    onClick={addTimelineNote}
-                    disabled={!newNote.trim()}
-                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Add Note
-                  </button>
-                </div>
-              </div>
+              {(() => {
+                const selectedShowingProperties = getShowingProperties(selectedShowing);
+
+                return (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add Timeline Note</label>
+                        <p className="mt-1 text-xs text-slate-500">Attach feedback to the whole showing or to one specific property.</p>
+                      </div>
+                      <div className="min-w-[220px] space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Note Scope</label>
+                        <select
+                          value={newNotePropertyId}
+                          onChange={(e) => setNewNotePropertyId(e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        >
+                          <option value="general">General showing note</option>
+                          {selectedShowingProperties.map(property => (
+                            <option key={property.id} value={property.id}>{property.address}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Write a clear note, client feedback, or next action..."
+                      className="mt-3 w-full min-h-[110px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={addTimelineNote}
+                        disabled={!newNote.trim()}
+                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Add Note
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -406,6 +444,17 @@ export default function Showings() {
                         </div>
                       ) : (
                         <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {getNoteProperty(note) ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-200">
+                                <MapPin size={12} /> {getNoteProperty(note)?.address}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                General Showing
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-start justify-between gap-3">
                             <p className="text-sm leading-6 text-slate-100">{note.note}</p>
                             <button onClick={() => startEditingNote(note.id, note.note)} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800">
