@@ -16,14 +16,14 @@ async function startServer() {
   
   // Health check
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "LuxeCRM API is running" });
+    res.json({ status: "ok", message: "Sollace API is running" });
   });
 
   // Mock Database (In-memory for prototype)
   const db = {
     users: [
-      { id: 'u1', fullName: 'Kunaal Gupta', email: 'kunaal@luxecrm.com', role: 'admin', status: 'active' },
-      { id: 'u2', fullName: 'Jane Doe', email: 'jane@luxecrm.com', role: 'agent', status: 'active' }
+      { id: 'u1', fullName: 'Kunaal Gupta', email: 'kunaal@sollace.com', role: 'admin', status: 'active' },
+      { id: 'u2', fullName: 'Jane Doe', email: 'jane@sollace.com', role: 'agent', status: 'active' }
     ],
     properties: [
       { 
@@ -196,7 +196,7 @@ async function startServer() {
     ],
     showings: [],
     emailTemplates: [
-      { id: 't1', name: 'Initial Lead Follow-up', subject: 'Welcome to LuxeCRM - Next Steps', body: 'Dear {{contact_name}},\n\nWelcome to LuxeCRM! We are excited to help you with your real estate needs.\n\nBest regards,\n{{agent_name}}' },
+      { id: 't1', name: 'Initial Lead Follow-up', subject: 'Welcome to Sollace - Next Steps', body: 'Dear {{contact_name}},\n\nWelcome to Sollace! We are excited to help you with your real estate needs.\n\nBest regards,\n{{agent_name}}' },
       { id: 't2', name: 'Property Showing Confirmation', subject: 'Confirmed: Showing for {{property_address}}', body: 'Hi {{contact_name}},\n\nThis is to confirm your showing for {{property_address}} on {{showing_date}} at {{showing_time}}.\n\nSee you there!' },
       { id: 't3', name: 'Offer Submission', subject: 'New Offer Received for {{property_address}}', body: 'Hello,\n\nWe have received a new offer for the property at {{property_address}}.\n\nDetails: {{offer_details}}' },
       { id: 't4', name: 'Closing Documents', subject: 'Action Required: Closing Documents for {{deal_id}}', body: 'Dear {{contact_name}},\n\nPlease review and sign the attached closing documents for your deal.' },
@@ -369,7 +369,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`LuxeCRM Server running on http://localhost:${PORT}`);
+    console.log(`Sollace Server running on http://localhost:${PORT}`);
   });
 }
 
