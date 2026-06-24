@@ -514,13 +514,12 @@ export default function Showings() {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative flex w-full max-w-lg max-h-[78vh] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl"
+            className="relative flex w-full max-w-2xl max-h-[78vh] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl"
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-800 bg-slate-900/70 p-5">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Showing Notes</p>
-                <h2 className="text-xl font-bold text-white">Timeline & Follow-ups</h2>
-                <p className="text-sm text-slate-400">Add updates, client feedback, and next steps for this showing.</p>
+                <h2 className="text-2xl font-bold text-white">Showing Notes</h2>
+                <p className="mt-1 text-sm text-slate-400">Add updates, client feedback, and next steps for this showing.</p>
               </div>
               <button
                 onClick={() => {
@@ -544,7 +543,6 @@ export default function Showings() {
                           <span className="rounded-lg bg-blue-500/10 p-2 text-blue-300"><StickyNote size={15} /></span>
                           <div>
                             <label className="text-xs font-bold text-slate-300 uppercase tracking-widest">Add Timeline Note</label>
-                            <p className="mt-1 text-xs text-slate-500">Attach feedback to the whole showing or one property.</p>
                           </div>
                         </div>
                       </div>
@@ -566,8 +564,9 @@ export default function Showings() {
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Write a clear note, client feedback, or next action..."
-                      className="mt-3 w-full min-h-[74px] rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="mt-3 w-full min-h-[130px] rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
+                    <p className="mt-2 text-[11px] text-slate-500">* Attach feedback to the whole showing or one property.</p>
                     <div className="mt-3 flex justify-end">
                       <button
                         type="button"
