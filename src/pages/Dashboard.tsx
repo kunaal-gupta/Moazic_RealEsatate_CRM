@@ -1,31 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  Users, 
-  Briefcase, 
-  DollarSign, 
-  ArrowUpRight, 
+import {
+  TrendingUp,
+  Users,
+  Briefcase,
+  CalendarCheck,
+  ArrowUpRight,
   ArrowDownRight,
   Activity as ActivityIcon,
   Clock,
   ChevronRight
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   AreaChart,
   Area
 } from 'recharts';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
-import { Deal, Contact, Activity } from '../types';
+import { Deal, Activity, Lead, Showing } from '../types';
 
-const StatCard = ({ title, value, icon: Icon, trend, trendValue, color }: any) => (
+const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -45,6 +45,7 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, color }: any) =
     </div>
     <h3 className="text-slate-400 text-sm font-medium mb-1 uppercase tracking-wider">{title}</h3>
     <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
+    {subtitle && <p className="mt-2 text-xs font-medium text-slate-500">{subtitle}</p>}
   </motion.div>
 );
 
@@ -52,26 +53,33 @@ const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
 export default function Dashboard() {
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [showings, setShowings] = useState<Showing[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [d, c, a] = await Promise.all([
+        const [d, a, l, s] = await Promise.all([
           api.deals.list(),
-          api.contacts.list(),
-          api.activities.list()
+          api.activities.list(),
+          api.leads.list(),
+          api.showings.list()
         ]);
         setDeals(d);
-        setContacts(c);
         setActivities(a);
+        setLeads(l);
+        setShowings(s);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
       }
     };
     loadData();
   }, []);
+
+  const activeLeads = leads.filter(lead => lead.stageId !== 'ls5').length;
+  const totalLeads = leads.length;
+  const upcomingShowings = showings.filter(showing => showing.status === 'scheduled' && new Date(showing.scheduledAt).getTime() >= Date.now()).length;
 
   const chartData = [
     { name: 'Jan', deals: 4, revenue: 2400 },
@@ -101,37 +109,38 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Deals" 
-          value={deals.length || "24"} 
-          icon={Briefcase} 
-          trend="up" 
-          trendValue="12" 
-          color="blue" 
+        <StatCard
+          title="Total Deals"
+          value={deals.length || "24"}
+          icon={Briefcase}
+          trend="up"
+          trendValue="12"
+          color="blue"
         />
-        <StatCard 
-          title="Active Leads" 
-          value={contacts.length || "156"} 
-          icon={Users} 
-          trend="up" 
-          trendValue="8" 
-          color="indigo" 
+        <StatCard
+          title="Active Leads"
+          value={totalLeads ? activeLeads : "142"}
+          subtitle={`Total leads: ${totalLeads || "156"}`}
+          icon={Users}
+          trend="up"
+          trendValue="8"
+          color="indigo"
         />
-        <StatCard 
-          title="Total Revenue" 
-          value="$4.2M" 
-          icon={DollarSign} 
-          trend="down" 
-          trendValue="3" 
-          color="emerald" 
+        <StatCard
+          title="Upcoming Showings"
+          value={showings.length ? upcomingShowings : "12"}
+          icon={CalendarCheck}
+          trend="up"
+          trendValue="6"
+          color="emerald"
         />
-        <StatCard 
-          title="Conversion" 
-          value="24.5%" 
-          icon={TrendingUp} 
-          trend="up" 
-          trendValue="15" 
-          color="amber" 
+        <StatCard
+          title="Conversion"
+          value="24.5%"
+          icon={TrendingUp}
+          trend="up"
+          trendValue="15"
+          color="amber"
         />
       </div>
 
@@ -161,7 +170,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
                   itemStyle={{ color: '#fff' }}
                 />
