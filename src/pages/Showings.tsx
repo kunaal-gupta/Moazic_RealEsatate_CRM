@@ -514,9 +514,9 @@ export default function Showings() {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-xl max-h-[86vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"
+            className="relative flex w-full max-w-lg max-h-[78vh] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl"
           >
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3 bg-slate-900/70">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 bg-slate-900/70 p-5">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Showing Notes</p>
                 <h2 className="text-xl font-bold text-white">Timeline & Follow-ups</h2>
@@ -533,15 +533,20 @@ export default function Showings() {
               </button>
             </div>
 
-            <div className="p-4 sm:p-5 space-y-4">
+            <div className="max-h-[calc(78vh-96px)] space-y-5 overflow-y-auto p-5">
               {(() => {
                 const selectedShowingProperties = getShowingProperties(selectedShowing);
                 return (
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 shadow-inner shadow-slate-950/20">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add Timeline Note</label>
-                        <p className="mt-1 text-xs text-slate-500">Attach feedback to the whole showing or to one specific property.</p>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-lg bg-blue-500/10 p-2 text-blue-300"><StickyNote size={15} /></span>
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 uppercase tracking-widest">Add Timeline Note</label>
+                            <p className="mt-1 text-xs text-slate-500">Attach feedback to the whole showing or one property.</p>
+                          </div>
+                        </div>
                       </div>
                       <div className="min-w-[220px] space-y-1.5">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Note Scope</label>
@@ -561,14 +566,14 @@ export default function Showings() {
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Write a clear note, client feedback, or next action..."
-                      className="mt-3 w-full min-h-[86px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="mt-3 w-full min-h-[74px] rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                     <div className="mt-3 flex justify-end">
                       <button
                         type="button"
                         onClick={addTimelineNote}
                         disabled={!newNote.trim() || savingNote}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {savingNote ? 'Adding...' : 'Add Note'}
                       </button>
@@ -586,15 +591,18 @@ export default function Showings() {
                 ));
 
                 return (
-                  <div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/30 p-4">
                     <div className="mb-4 space-y-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <h3 className="font-bold text-white">Notes Timeline</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-lg bg-indigo-500/10 p-2 text-indigo-300"><Clock size={15} /></span>
+                          <h3 className="font-bold text-white">Notes Timeline</h3>
+                        </div>
                         <span className="w-fit rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                           {filteredNotes.length} of {selectedShowing.notesTimeline?.length || 0} notes
                         </span>
                       </div>
-                      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-2">
                         <button type="button" onClick={() => setNotesPropertyFilterId('all')} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all", notesPropertyFilterId === 'all' ? "border-blue-400 bg-blue-500/20 text-blue-100" : "border-slate-700 bg-slate-800 text-slate-300 hover:text-white")}>All</button>
                         <button type="button" onClick={() => setNotesPropertyFilterId('general')} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all", notesPropertyFilterId === 'general' ? "border-blue-400 bg-blue-500/20 text-blue-100" : "border-slate-700 bg-slate-800 text-slate-300 hover:text-white")}>General</button>
                         {selectedShowingProperties.map(property => (
@@ -605,9 +613,9 @@ export default function Showings() {
                       </div>
                     </div>
 
-                    <div className="space-y-3 border-l border-slate-700 pl-4 sm:pl-5">
+                    <div className="max-h-[260px] space-y-3 overflow-y-auto border-l border-slate-700 pl-4 pr-1 sm:pl-5">
                       {filteredNotes.map(note => (
-                    <div key={note.id} className="relative rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+                    <div key={note.id} className="relative rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-sm shadow-slate-950/20">
                       <span className="absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-slate-900 shadow-lg shadow-blue-500/30" />
                       {editingNoteId === note.id ? (
                         <div className="space-y-3">
