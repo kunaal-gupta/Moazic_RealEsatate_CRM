@@ -11,11 +11,13 @@ import {
   ArrowUpDown,
   StickyNote,
   ChevronDown,
-  Home
+  Home,
+  Mail,
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
-import { Showing, ShowingNote, Property, Contact } from '../types';
+import { Showing, ShowingNote, Property, Contact, EmailTemplate, Email as EmailType } from '../types';
 import { cn } from '../lib/utils';
 import MultiSelect from '../components/MultiSelect';
 
@@ -37,6 +39,8 @@ export default function Showings() {
   const [showings, setShowings] = useState<Showing[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [emails, setEmails] = useState<EmailType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedShowing, setSelectedShowing] = useState<Showing | null>(null);
   const [editingShowing, setEditingShowing] = useState<Showing | null>(null);
@@ -54,6 +58,10 @@ export default function Showings() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showingForm, setShowingForm] = useState<ShowingFormState>(emptyShowingForm);
   const [expandedShowingIds, setExpandedShowingIds] = useState<Set<string>>(new Set());
+  const [notificationShowing, setNotificationShowing] = useState<Showing | null>(null);
+  const [notificationContactIds, setNotificationContactIds] = useState<string[]>([]);
+  const [notificationTemplateId, setNotificationTemplateId] = useState('');
+  const [sendingNotifications, setSendingNotifications] = useState(false);
 
   const propertyOptions = properties.map(p => ({ id: p.id, name: `${p.address} (${p.community})` }));
   const contactOptions = contacts.map(c => ({ id: c.id, name: c.fullName }));
@@ -62,11 +70,15 @@ export default function Showings() {
     Promise.all([
       api.showings.list(), 
       api.properties.list(),
-      api.contacts.list()
-    ]).then(([s, p, c]) => {
+      api.contacts.list(),
+      api.emailTemplates.list(),
+      api.emails.list()
+    ]).then(([s, p, c, templates, emailRecords]) => {
       setShowings(s);
       setProperties(p);
       setContacts(c);
+      setEmailTemplates(templates);
+      setEmails(emailRecords);
     });
   }, []);
 
@@ -91,6 +103,66 @@ export default function Showings() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getShowingNotificationEmails = (showing: Showing) => emails.filter(email => (email as EmailType & { showingId?: string }).showingId === showing.id);
+
+  const openNotificationModal = (showing: Showing) => {
+    const sentContactIds = new Set(getShowingNotificationEmails(showing).map(email => email.contactId));
+    setNotificationShowing(showing);
+    setNotificationContactIds((showing.participantIds || []).filter(contactId => !sentContactIds.has(contactId)));
+    setNotificationTemplateId(emailTemplates.find(template => template.name.toLowerCase().includes('showing'))?.id || emailTemplates[0]?.id || '');
+  };
+
+  const closeNotificationModal = () => {
+    setNotificationShowing(null);
+    setNotificationContactIds([]);
+    setNotificationTemplateId('');
+  };
+
+  const renderNotificationText = (text: string, showing: Showing, contact: Contact) => {
+    const showingProperties = getShowingProperties(showing);
+    const propertyAddress = showingProperties.map(property => property.address).join(', ') || 'the selected property';
+    const showingDate = new Date(showing.scheduledAt).toLocaleDateString();
+    const showingTime = new Date(showing.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return text
+      .replaceAll('{{contact_name}}', contact.fullName)
+      .replaceAll('{{property_address}}', propertyAddress)
+      .replaceAll('{{showing_date}}', showingDate)
+      .replaceAll('{{showing_time}}', showingTime)
+      .replaceAll('{{agent_name}}', 'Your agent');
+  };
+
+  const sendShowingNotifications = async () => {
+    if (!notificationShowing || notificationContactIds.length === 0 || sendingNotifications) return;
+    setSendingNotifications(true);
+    try {
+      const template = emailTemplates.find(item => item.id === notificationTemplateId);
+      const showingProperties = getShowingProperties(notificationShowing);
+      const propertyAddress = showingProperties.map(property => property.address).join(', ') || 'Showing';
+      const fallbackSubject = `Confirmed: Showing for ${propertyAddress}`;
+      const fallbackBody = 'Hi {{contact_name}},\n\nThis is to confirm your showing for {{property_address}} on {{showing_date}} at {{showing_time}}.\n\nSee you there!';
+      const sentEmails = await Promise.all(notificationContactIds.map(async contactId => {
+        const contact = getContact(contactId);
+        if (!contact) return null;
+        return api.emails.create({
+          contactId,
+          subject: renderNotificationText(template?.subject || fallbackSubject, notificationShowing, contact),
+          body: renderNotificationText(template?.body || fallbackBody, notificationShowing, contact),
+          status: 'sent',
+          dealId: notificationShowing.dealId,
+          showingId: notificationShowing.id,
+          createdAt: new Date().toISOString()
+        } as Partial<EmailType> & { showingId: string });
+      }));
+      setEmails(prev => [...sentEmails.filter((email): email is EmailType => Boolean(email)), ...prev]);
+      closeNotificationModal();
+    } catch (error) {
+      console.error('Failed to send showing notifications:', error);
+    } finally {
+      setSendingNotifications(false);
+    }
   };
 
   const visibleShowings = useMemo(() => {
@@ -185,6 +257,9 @@ export default function Showings() {
       } else {
         const scheduledShowing = await api.showings.create(showingForm);
         setShowings([scheduledShowing, ...showings]);
+        if (scheduledShowing.participantIds?.length) {
+          openNotificationModal(scheduledShowing);
+        }
       }
       setIsModalOpen(false);
       resetForm();
@@ -397,6 +472,9 @@ export default function Showings() {
                       </div>
 
                       <div className="flex flex-wrap justify-end gap-2">
+                        <button type="button" onClick={() => openNotificationModal(showing)} disabled={!showingParticipants.length} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
+                          <Mail size={16} /> Email Clients ({getShowingNotificationEmails(showing).length}/{showingParticipants.length})
+                        </button>
                         <button type="button" onClick={() => openNotesModal(showing)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500">
                           <StickyNote size={16} /> Add Notes
                         </button>
@@ -576,6 +654,71 @@ export default function Showings() {
                   </div>
                 );
               })()}
+            </div>
+          </motion.div>
+        </div>
+      )}</AnimatePresence>
+
+
+      <AnimatePresence>{notificationShowing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeNotificationModal} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 bg-slate-900/70 p-5">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Showing Notification</p>
+                <h2 className="text-xl font-bold text-white">Email Clients</h2>
+                <p className="text-sm text-slate-400">Select which showing participants should receive this confirmation.</p>
+              </div>
+              <button onClick={closeNotificationModal} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"><XCircle size={20} /></button>
+            </div>
+
+            <div className="space-y-5 p-5">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-300">
+                <p className="font-bold text-white">{getShowingProperties(notificationShowing).map(property => property.address).join(', ') || 'No property selected'}</p>
+                <p className="mt-1 text-slate-400">{formatShowingDateTime(notificationShowing.scheduledAt)}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Email Template</label>
+                <select value={notificationTemplateId} onChange={(e) => setNotificationTemplateId(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                  <option value="">Default showing confirmation</option>
+                  {emailTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Clients</label>
+                  <span className="text-xs text-slate-500">{notificationContactIds.length} selected</span>
+                </div>
+                <div className="space-y-2">
+                  {getShowingParticipants(notificationShowing).map(contact => {
+                    const alreadySent = getShowingNotificationEmails(notificationShowing).some(email => email.contactId === contact.id);
+                    const checked = notificationContactIds.includes(contact.id);
+                    return (
+                      <label key={contact.id} className={cn("flex items-center justify-between gap-3 rounded-xl border p-3", alreadySent ? "border-emerald-500/20 bg-emerald-500/10" : "border-slate-800 bg-slate-950/40")}>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-bold text-white">{contact.fullName}</span>
+                          <span className="block truncate text-xs text-slate-400">{contact.email}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-3">
+                          {alreadySent && <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300">Sent</span>}
+                          <input type="checkbox" checked={checked} onChange={(e) => setNotificationContactIds(prev => e.target.checked ? [...prev, contact.id] : prev.filter(id => id !== contact.id))} className="h-4 w-4 accent-indigo-500" />
+                        </span>
+                      </label>
+                    );
+                  })}
+                  {!getShowingParticipants(notificationShowing).length && <p className="rounded-xl border border-dashed border-slate-700 p-4 text-center text-sm text-slate-500">No participants are attached to this showing.</p>}
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button type="button" onClick={closeNotificationModal} className="rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-700">Cancel</button>
+                <button type="button" onClick={sendShowingNotifications} disabled={!notificationContactIds.length || sendingNotifications} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
+                  <Send size={16} /> {sendingNotifications ? 'Sending...' : 'Send Notification'}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
