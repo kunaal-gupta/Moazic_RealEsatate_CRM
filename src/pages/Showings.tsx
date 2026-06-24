@@ -837,13 +837,6 @@ export default function Showings() {
                   <Send size={16} /> {sendingNotifications ? 'Sending...' : 'Send Notification'}
                 </button>
               </div>
-
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={closeNotificationModal} className="rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-700">Cancel</button>
-                <button type="button" onClick={sendShowingNotifications} disabled={!notificationContactIds.length || sendingNotifications} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
-                  <Send size={16} /> {sendingNotifications ? 'Sending...' : 'Send Notification'}
-                </button>
-              </div>
             </div>
           </motion.div>
         </div>
