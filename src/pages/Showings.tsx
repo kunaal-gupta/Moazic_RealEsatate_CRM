@@ -13,7 +13,8 @@ import {
   ChevronDown,
   Home,
   Mail,
-  Send
+  Send,
+  ClipboardList
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
@@ -24,6 +25,7 @@ import MultiSelect from '../components/MultiSelect';
 type ShowingStatus = Showing['status'];
 type SortKey = 'scheduledAt' | 'status' | 'participants' | 'property';
 type ShowingFormState = Partial<Showing>;
+type ShowingTaskFormState = { title: string; description: string; participantIds: string[]; propertyIds: string[]; dueDate: string; status: 'pending' };
 
 const emptyShowingForm: ShowingFormState = {
   propertyIds: [],
@@ -33,6 +35,15 @@ const emptyShowingForm: ShowingFormState = {
   participantIds: [],
   notes: '',
   notesTimeline: []
+};
+
+const emptyShowingTaskForm: ShowingTaskFormState = {
+  title: '',
+  description: '',
+  participantIds: [],
+  propertyIds: [],
+  dueDate: '',
+  status: 'pending'
 };
 
 export default function Showings() {
@@ -62,6 +73,9 @@ export default function Showings() {
   const [notificationContactIds, setNotificationContactIds] = useState<string[]>([]);
   const [notificationTemplateId, setNotificationTemplateId] = useState('');
   const [sendingNotifications, setSendingNotifications] = useState(false);
+  const [taskShowing, setTaskShowing] = useState<Showing | null>(null);
+  const [showingTaskForm, setShowingTaskForm] = useState<ShowingTaskFormState>(emptyShowingTaskForm);
+  const [savingShowingTask, setSavingShowingTask] = useState(false);
 
   const propertyOptions = properties.map(p => ({ id: p.id, name: `${p.address} (${p.community})` }));
   const contactOptions = contacts.map(c => ({ id: c.id, name: c.fullName }));
@@ -162,6 +176,50 @@ export default function Showings() {
       console.error('Failed to send showing notifications:', error);
     } finally {
       setSendingNotifications(false);
+    }
+  };
+
+  const openTaskModal = (showing: Showing) => {
+    const showingProperties = getShowingProperties(showing);
+    const propertyLabel = showingProperties.length === 1 ? showingProperties[0].address : `${showingProperties.length || 'Selected'} properties`;
+    setTaskShowing(showing);
+    setShowingTaskForm({
+      title: `Follow up for ${propertyLabel}`,
+      description: '',
+      participantIds: showing.participantIds || [],
+      propertyIds: showing.propertyIds || [],
+      dueDate: '',
+      status: 'pending'
+    });
+  };
+
+  const closeTaskModal = () => {
+    setTaskShowing(null);
+    setShowingTaskForm(emptyShowingTaskForm);
+  };
+
+  const saveShowingTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskShowing || !showingTaskForm.title.trim() || savingShowingTask) return;
+    setSavingShowingTask(true);
+    try {
+      await api.tasks.create({
+        title: showingTaskForm.title.trim(),
+        description: showingTaskForm.description.trim(),
+        dueDate: showingTaskForm.dueDate,
+        status: showingTaskForm.status,
+        contactId: showingTaskForm.participantIds[0],
+        contactIds: showingTaskForm.participantIds,
+        propertyIds: showingTaskForm.propertyIds,
+        showingId: taskShowing.id,
+        dealId: taskShowing.dealId,
+        createdAt: new Date().toISOString()
+      });
+      closeTaskModal();
+    } catch (error) {
+      console.error('Failed to create showing task:', error);
+    } finally {
+      setSavingShowingTask(false);
     }
   };
 
@@ -478,12 +536,18 @@ export default function Showings() {
                         <button type="button" onClick={() => openNotesModal(showing)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500">
                           <StickyNote size={16} /> Add Notes
                         </button>
-                        <button type="button" onClick={() => updateShowingStatus(showing, 'completed')} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-emerald-500/10 hover:text-emerald-400">
-                          <CheckCircle2 size={16} /> Complete
+                        <button type="button" onClick={() => openTaskModal(showing)} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-amber-500/10 hover:text-amber-300">
+                          <ClipboardList size={16} /> Add Task
                         </button>
-                        <button type="button" onClick={() => updateShowingStatus(showing, 'cancelled')} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-rose-500/10 hover:text-rose-400">
-                          <XCircle size={16} /> Cancel
-                        </button>
+                        <label className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 text-sm font-bold text-slate-200">
+                          <CheckCircle2 size={16} className="text-emerald-400" />
+                          <span className="sr-only">Update status</span>
+                          <select value={showing.status} onChange={(e) => updateShowingStatus(showing, e.target.value as ShowingStatus)} className="bg-transparent text-sm font-bold text-slate-200 focus:outline-none">
+                            <option className="bg-slate-900" value="scheduled">Scheduled</option>
+                            <option className="bg-slate-900" value="completed">Completed</option>
+                            <option className="bg-slate-900" value="cancelled">Cancelled</option>
+                          </select>
+                        </label>
                         <button type="button" onClick={() => openEditModal(showing)} className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-200 transition-all hover:bg-slate-700 hover:text-white">
                           <Edit3 size={16} /> Edit
                         </button>
@@ -667,6 +731,53 @@ export default function Showings() {
       )}</AnimatePresence>
 
 
+      <AnimatePresence>{taskShowing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeTaskModal} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 bg-slate-900/70 p-5">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Showing Task</p>
+                <h2 className="text-xl font-bold text-white">Add Client Follow-up Task</h2>
+                <p className="text-sm text-slate-400">Assign a follow-up tied to this showing's clients and properties.</p>
+              </div>
+              <button onClick={closeTaskModal} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"><XCircle size={20} /></button>
+            </div>
+
+            <form onSubmit={saveShowingTask} className="space-y-5 p-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Title</label>
+                  <input required value={showingTaskForm.title} onChange={(e) => setShowingTaskForm({ ...showingTaskForm, title: e.target.value })} placeholder="Follow up with showing participants" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Description</label>
+                  <textarea value={showingTaskForm.description} onChange={(e) => setShowingTaskForm({ ...showingTaskForm, description: e.target.value })} placeholder="Add next steps, context, or client feedback to act on..." className="min-h-[110px] w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                </div>
+                <MultiSelect label="PARTICIPANTS" options={getShowingParticipants(taskShowing).map(contact => ({ id: contact.id, name: `${contact.fullName} (${contact.email})` }))} selectedIds={showingTaskForm.participantIds} onChange={(ids) => setShowingTaskForm({ ...showingTaskForm, participantIds: ids })} placeholder="Select participants..." />
+                <MultiSelect label="PROPERTIES" options={getShowingProperties(taskShowing).map(property => ({ id: property.id, name: property.address }))} selectedIds={showingTaskForm.propertyIds} onChange={(ids) => setShowingTaskForm({ ...showingTaskForm, propertyIds: ids })} placeholder="Select properties..." />
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Due Date</label>
+                  <input type="date" value={showingTaskForm.dueDate} onChange={(e) => setShowingTaskForm({ ...showingTaskForm, dueDate: e.target.value })} className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Status</label>
+                  <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-200">Assigned by default</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-800 pt-5 sm:flex-row sm:justify-end">
+                <button type="button" onClick={closeTaskModal} className="rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-700">Cancel</button>
+                <button type="submit" disabled={!showingTaskForm.title.trim() || savingShowingTask} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/20 hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50">
+                  <ClipboardList size={16} /> {savingShowingTask ? 'Creating...' : 'Create Task'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}</AnimatePresence>
+
+
       <AnimatePresence>{notificationShowing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeNotificationModal} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
@@ -718,6 +829,13 @@ export default function Showings() {
                   })}
                   {!getShowingParticipants(notificationShowing).length && <p className="rounded-xl border border-dashed border-slate-700 p-4 text-center text-sm text-slate-500">No participants are attached to this showing.</p>}
                 </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button type="button" onClick={closeNotificationModal} className="rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-700">Cancel</button>
+                <button type="button" onClick={sendShowingNotifications} disabled={!notificationContactIds.length || sendingNotifications} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
+                  <Send size={16} /> {sendingNotifications ? 'Sending...' : 'Send Notification'}
+                </button>
               </div>
 
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
