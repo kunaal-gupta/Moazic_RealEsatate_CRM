@@ -190,5 +190,6 @@ export interface Email {
   status: 'pending' | 'sent' | 'failed';
   scheduledAt?: string;
   dealId?: string;
+  showingId?: string;
   createdAt: string;
 }
