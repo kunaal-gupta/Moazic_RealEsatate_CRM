@@ -43,6 +43,7 @@ export default function Showings() {
   const [loading, setLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [newNotePropertyId, setNewNotePropertyId] = useState<string>('general');
+  const [notesPropertyFilterId, setNotesPropertyFilterId] = useState<string>('all');
   const [savingNote, setSavingNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState('');
@@ -148,6 +149,7 @@ export default function Showings() {
     setSelectedShowing(showing);
     setNewNote('');
     setNewNotePropertyId('general');
+    setNotesPropertyFilterId('all');
     cancelEditingNote();
   };
 
@@ -172,6 +174,9 @@ export default function Showings() {
 
   const saveShowing = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (showingForm.scheduledAt && showingForm.endScheduledAt && new Date(showingForm.endScheduledAt).getTime() < new Date(showingForm.scheduledAt).getTime()) {
+      return;
+    }
     setLoading(true);
     try {
       if (editingShowing) {
@@ -431,9 +436,9 @@ export default function Showings() {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"
+            className="relative w-full max-w-xl max-h-[86vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"
           >
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/70">
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3 bg-slate-900/70">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Showing Notes</p>
                 <h2 className="text-xl font-bold text-white">Timeline & Follow-ups</h2>
@@ -450,10 +455,9 @@ export default function Showings() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-5 space-y-4">
               {(() => {
                 const selectedShowingProperties = getShowingProperties(selectedShowing);
-
                 return (
                   <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -479,7 +483,7 @@ export default function Showings() {
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Write a clear note, client feedback, or next action..."
-                      className="mt-3 w-full min-h-[110px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="mt-3 w-full min-h-[86px] bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                     <div className="mt-3 flex justify-end">
                       <button
@@ -495,16 +499,36 @@ export default function Showings() {
                 );
               })()}
 
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-white">Notes Timeline</h3>
-                  <span className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    {selectedShowing.notesTimeline?.length || 0} notes
-                  </span>
-                </div>
+              {(() => {
+                const selectedShowingProperties = getShowingProperties(selectedShowing);
+                const filteredNotes = (selectedShowing.notesTimeline || []).filter(note => (
+                  notesPropertyFilterId === 'all'
+                  || (notesPropertyFilterId === 'general' && !note.propertyId)
+                  || note.propertyId === notesPropertyFilterId
+                ));
 
-                <div className="space-y-4 border-l border-slate-700 pl-5">
-                  {(selectedShowing.notesTimeline || []).map(note => (
+                return (
+                  <div>
+                    <div className="mb-4 space-y-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <h3 className="font-bold text-white">Notes Timeline</h3>
+                        <span className="w-fit rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                          {filteredNotes.length} of {selectedShowing.notesTimeline?.length || 0} notes
+                        </span>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                        <button type="button" onClick={() => setNotesPropertyFilterId('all')} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all", notesPropertyFilterId === 'all' ? "border-blue-400 bg-blue-500/20 text-blue-100" : "border-slate-700 bg-slate-800 text-slate-300 hover:text-white")}>All</button>
+                        <button type="button" onClick={() => setNotesPropertyFilterId('general')} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all", notesPropertyFilterId === 'general' ? "border-blue-400 bg-blue-500/20 text-blue-100" : "border-slate-700 bg-slate-800 text-slate-300 hover:text-white")}>General</button>
+                        {selectedShowingProperties.map(property => (
+                          <button key={property.id} type="button" onClick={() => setNotesPropertyFilterId(property.id)} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all", notesPropertyFilterId === property.id ? "border-blue-400 bg-blue-500/20 text-blue-100" : "border-slate-700 bg-slate-800 text-slate-300 hover:text-white")}>
+                            {property.address}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 border-l border-slate-700 pl-4 sm:pl-5">
+                      {filteredNotes.map(note => (
                     <div key={note.id} className="relative rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
                       <span className="absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-slate-900 shadow-lg shadow-blue-500/30" />
                       {editingNoteId === note.id ? (
@@ -543,19 +567,21 @@ export default function Showings() {
                       )}
                     </div>
                   ))}
-                  {!selectedShowing.notesTimeline?.length && (
-                    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/30 p-6 text-center text-sm text-slate-500">
-                      No timeline notes yet. Add the first professional follow-up note above.
+                      {!filteredNotes.length && (
+                        <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/30 p-6 text-center text-sm text-slate-500">
+                          {selectedShowing.notesTimeline?.length ? 'No notes match this property filter.' : 'No timeline notes yet. Add the first professional follow-up note above.'}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
         </div>
       )}</AnimatePresence>
 
-      <AnimatePresence>{isModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setIsModalOpen(false); resetForm(); }} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden"><div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50"><h2 className="text-xl font-bold text-white">{editingShowing ? 'Edit Showing' : 'Schedule New Showing'}</h2><button onClick={() => { setIsModalOpen(false); resetForm(); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><XCircle size={20} /></button></div><form onSubmit={saveShowing} className="p-8 space-y-6"><MultiSelect label="PROPERTIES" options={propertyOptions} selectedIds={showingForm.propertyIds || []} onChange={(ids) => setShowingForm({ ...showingForm, propertyIds: ids })} placeholder="Select properties to show..." /><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Start Time</label><input required type="datetime-local" value={showingForm.scheduledAt} onChange={(e) => setShowingForm({ ...showingForm, scheduledAt: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /></div><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">End Time</label><input required type="datetime-local" value={showingForm.endScheduledAt} onChange={(e) => setShowingForm({ ...showingForm, endScheduledAt: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /></div></div><select value={showingForm.status} onChange={(e) => setShowingForm({ ...showingForm, status: e.target.value as ShowingStatus })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select><MultiSelect label="PARTICIPANTS" options={contactOptions} selectedIds={showingForm.participantIds || []} onChange={(ids) => setShowingForm({ ...showingForm, participantIds: ids })} placeholder="Select participants..." /><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Notes</label><textarea value={showingForm.notes} onChange={(e) => setShowingForm({ ...showingForm, notes: e.target.value })} placeholder="Any special instructions..." className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[80px]" /></div><div className="pt-4 flex justify-end gap-3"><button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700">Cancel</button><button type="submit" disabled={loading || !showingForm.scheduledAt || !showingForm.endScheduledAt || !showingForm.propertyIds?.length} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Saving...' : editingShowing ? 'Save Changes' : 'Schedule Showing'}</button></div></form></motion.div></div>}</AnimatePresence>
+      <AnimatePresence>{isModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setIsModalOpen(false); resetForm(); }} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl"><div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50"><h2 className="text-xl font-bold text-white">{editingShowing ? 'Edit Showing' : 'Schedule New Showing'}</h2><button onClick={() => { setIsModalOpen(false); resetForm(); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><XCircle size={20} /></button></div><form onSubmit={saveShowing} className="p-5 sm:p-6 space-y-5"><MultiSelect label="PROPERTIES" options={propertyOptions} selectedIds={showingForm.propertyIds || []} onChange={(ids) => setShowingForm({ ...showingForm, propertyIds: ids })} placeholder="Select properties to show..." /><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Start Time</label><input required type="datetime-local" value={showingForm.scheduledAt} onChange={(e) => setShowingForm({ ...showingForm, scheduledAt: e.target.value, endScheduledAt: showingForm.endScheduledAt && new Date(showingForm.endScheduledAt).getTime() < new Date(e.target.value).getTime() ? e.target.value : showingForm.endScheduledAt })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /></div><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">End Time</label><input required type="datetime-local" min={showingForm.scheduledAt || undefined} value={showingForm.endScheduledAt} onChange={(e) => setShowingForm({ ...showingForm, endScheduledAt: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50" /></div></div><select value={showingForm.status} onChange={(e) => setShowingForm({ ...showingForm, status: e.target.value as ShowingStatus })} className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select><MultiSelect label="PARTICIPANTS" options={contactOptions} selectedIds={showingForm.participantIds || []} onChange={(ids) => setShowingForm({ ...showingForm, participantIds: ids })} placeholder="Select participants..." /><div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Notes</label><textarea value={showingForm.notes} onChange={(e) => setShowingForm({ ...showingForm, notes: e.target.value })} placeholder="Any special instructions..." className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[80px]" /></div><div className="pt-4 flex justify-end gap-3"><button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700">Cancel</button><button type="submit" disabled={loading || !showingForm.scheduledAt || !showingForm.endScheduledAt || !showingForm.propertyIds?.length || new Date(showingForm.endScheduledAt).getTime() < new Date(showingForm.scheduledAt).getTime()} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Saving...' : editingShowing ? 'Save Changes' : 'Schedule Showing'}</button></div></form></motion.div></div>}</AnimatePresence>
     </div>
   );
 }
