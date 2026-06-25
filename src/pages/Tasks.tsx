@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Filter,
   X,
+  Trash2,
   Calendar,
   Type,
   AlignLeft,
@@ -155,6 +156,18 @@ export default function Tasks() {
     setIsModalOpen(true);
   };
 
+  const handleDeleteTask = async (e: React.MouseEvent, task: Task) => {
+    e.stopPropagation();
+    const confirmed = window.confirm(`Delete task "${task.title}"?`);
+    if (!confirmed) return;
+    try {
+      await api.tasks.delete(task.id);
+      setTasks(tasks.filter(t => t.id !== task.id));
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload: Partial<Task> = {
@@ -257,12 +270,22 @@ export default function Tasks() {
                       )}>
                         {task.title}
                       </h3>
-                      <button
-                        onClick={(e) => handleEditTask(e, task)}
-                        className="text-slate-600 hover:text-white opacity-0 group-hover:opacity-100 transition-all p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => handleEditTask(e, task)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-300 transition-all hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-200"
+                        >
+                          <MoreVertical size={14} /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteTask(e, task)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-300 transition-all hover:border-rose-400/40 hover:bg-rose-500/20 hover:text-rose-100"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-slate-400 mt-1">{task.description}</p>
 
