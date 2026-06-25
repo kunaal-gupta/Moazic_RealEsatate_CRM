@@ -67,38 +67,38 @@
 }
 
 :root {
-    --background: oklch(0.97 0.01 250);
-    --foreground: oklch(0.2 0 0);
-    --card: oklch(0.99 0.01 250);
-    --card-foreground: oklch(0.2 0 0);
-    --popover: oklch(0.99 0.01 250);
-    --popover-foreground: oklch(0.2 0 0);
-    --primary: oklch(0.2 0 0);
-    --primary-foreground: oklch(0.98 0 0);
-    --secondary: oklch(0.92 0.01 250);
-    --secondary-foreground: oklch(0.2 0 0);
-    --muted: oklch(0.92 0.01 250);
-    --muted-foreground: oklch(0.5 0.01 250);
-    --accent: oklch(0.95 0.01 250);
-    --accent-foreground: oklch(0.2 0 0);
-    --destructive: oklch(0.5 0.2 27);
-    --border: oklch(0.85 0.01 250);
-    --input: oklch(0.85 0.01 250);
-    --ring: oklch(0.5 0 0);
+    --background: oklch(0.925 0.016 250);
+    --foreground: oklch(0.22 0.018 255);
+    --card: oklch(0.965 0.012 250);
+    --card-foreground: oklch(0.22 0.018 255);
+    --popover: oklch(0.965 0.012 250);
+    --popover-foreground: oklch(0.22 0.018 255);
+    --primary: oklch(0.28 0.035 255);
+    --primary-foreground: oklch(0.985 0.004 250);
+    --secondary: oklch(0.875 0.018 250);
+    --secondary-foreground: oklch(0.25 0.025 255);
+    --muted: oklch(0.88 0.014 250);
+    --muted-foreground: oklch(0.45 0.025 255);
+    --accent: oklch(0.905 0.018 250);
+    --accent-foreground: oklch(0.23 0.025 255);
+    --destructive: oklch(0.52 0.2 27);
+    --border: oklch(0.78 0.018 250);
+    --input: oklch(0.8 0.018 250);
+    --ring: oklch(0.44 0.035 255);
     --chart-1: oklch(0.5 0 0);
     --chart-2: oklch(0.4 0 0);
     --chart-3: oklch(0.3 0 0);
     --chart-4: oklch(0.2 0 0);
     --chart-5: oklch(0.1 0 0);
     --radius: 0.625rem;
-    --sidebar: oklch(0.97 0.01 250);
-    --sidebar-foreground: oklch(0.2 0 0);
-    --sidebar-primary: oklch(0.2 0 0);
-    --sidebar-primary-foreground: oklch(0.98 0 0);
-    --sidebar-accent: oklch(0.92 0.01 250);
-    --sidebar-accent-foreground: oklch(0.2 0 0);
-    --sidebar-border: oklch(0.85 0.01 250);
-    --sidebar-ring: oklch(0.5 0 0);
+    --sidebar: oklch(0.9 0.018 250);
+    --sidebar-foreground: oklch(0.23 0.025 255);
+    --sidebar-primary: oklch(0.28 0.035 255);
+    --sidebar-primary-foreground: oklch(0.985 0.004 250);
+    --sidebar-accent: oklch(0.84 0.018 250);
+    --sidebar-accent-foreground: oklch(0.24 0.025 255);
+    --sidebar-border: oklch(0.76 0.018 250);
+    --sidebar-ring: oklch(0.44 0.035 255);
 }
 
 .dark {
@@ -157,31 +157,32 @@
 
   html:not(.dark) body {
     background:
-      radial-gradient(circle at top left, rgb(239 246 255 / 0.7), transparent 34rem),
-      linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+      radial-gradient(circle at top left, rgb(148 163 184 / 0.22), transparent 30rem),
+      radial-gradient(circle at bottom right, rgb(100 116 139 / 0.16), transparent 32rem),
+      linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 48%, #d8dee8 100%);
   }
 
   html:not(.dark) [class*="bg-slate-950"],
   html:not(.dark) [class*="bg-slate-900"] {
-    background-color: rgb(255 255 255 / 0.92) !important;
+    background-color: rgb(241 245 249 / 0.9) !important;
   }
 
   html:not(.dark) [class*="bg-slate-800"] {
-    background-color: rgb(248 250 252 / 0.9) !important;
+    background-color: rgb(226 232 240 / 0.86) !important;
   }
 
   html:not(.dark) [class*="bg-slate-700"] {
-    background-color: rgb(226 232 240 / 0.9) !important;
+    background-color: rgb(203 213 225 / 0.88) !important;
   }
 
   html:not(.dark) [class*="border-slate-900"],
   html:not(.dark) [class*="border-slate-800"],
   html:not(.dark) [class*="border-slate-700"] {
-    border-color: rgb(203 213 225 / 0.9) !important;
+    border-color: rgb(148 163 184 / 0.75) !important;
   }
 
   html:not(.dark) [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
-    border-color: rgb(203 213 225 / 0.72) !important;
+    border-color: rgb(148 163 184 / 0.62) !important;
   }
 
   html:not(.dark) [class*="text-slate-600"] {
@@ -224,7 +225,7 @@
   html:not(.dark) select,
   html:not(.dark) textarea {
     background-color: rgb(255 255 255 / 0.96) !important;
-    border-color: rgb(203 213 225 / 0.9) !important;
+    border-color: rgb(148 163 184 / 0.75) !important;
     color: #0f172a !important;
   }
 
