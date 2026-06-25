@@ -150,6 +150,9 @@ export interface Task {
   description?: string;
   dealId?: string;
   contactId?: string;
+  contactIds?: string[];
+  propertyIds?: string[];
+  showingId?: string;
   assignedTo?: string;
   dueDate?: string;
   status: 'pending' | 'completed';
@@ -190,5 +193,6 @@ export interface Email {
   status: 'pending' | 'sent' | 'failed';
   scheduledAt?: string;
   dealId?: string;
+  showingId?: string;
   createdAt: string;
 }

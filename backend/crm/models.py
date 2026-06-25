@@ -308,6 +308,9 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     deal = models.ForeignKey('crm.Pipeline', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
     contact = models.ForeignKey('crm.Contact', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
+    showing = models.ForeignKey('crm.Showing', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
+    participants = models.ManyToManyField('crm.Contact', blank=True, related_name='task_participation')
+    properties = models.ManyToManyField('crm.Property', blank=True, related_name='tasks')
     assigned_to = models.ForeignKey('crm.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     due_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
@@ -316,7 +319,10 @@ class Task(models.Model):
     class Meta:
         db_table = 'tasks'
         ordering = ['due_date', 'created_at']
-        indexes = [models.Index(fields=['assigned_to', 'status'], name='idx_tasks_assigned_status')]
+        indexes = [
+            models.Index(fields=['assigned_to', 'status'], name='idx_tasks_assigned_status'),
+            models.Index(fields=['showing', 'status'], name='idx_tasks_showing_status'),
+        ]
 
 
 class Email(models.Model):
