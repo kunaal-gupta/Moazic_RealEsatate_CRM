@@ -75,6 +75,7 @@ export const api = {
     list: () => fetcher<Task[]>('/tasks'),
     create: (data: Partial<Task>) => fetcher<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Task>) => fetcher<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher<void>(`/tasks/${id}`, { method: 'DELETE' }),
   },
   showings: {
     list: () => fetcher<Showing[]>('/showings'),
