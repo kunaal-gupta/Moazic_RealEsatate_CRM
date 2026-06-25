@@ -208,6 +208,24 @@ class ShowingParticipant(models.Model):
         constraints = [models.UniqueConstraint(fields=['showing', 'contact'], name='uq_showing_contact')]
 
 
+class ShowingNote(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    showing = models.ForeignKey('crm.Showing', on_delete=models.CASCADE, related_name='notes_timeline')
+    property = models.ForeignKey('crm.Property', on_delete=models.CASCADE, null=True, blank=True, related_name='showing_notes')
+    note = models.TextField()
+    created_by = models.ForeignKey('crm.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_showing_notes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'showing_notes'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['showing', 'created_at'], name='idx_showing_notes_timeline'),
+            models.Index(fields=['property'], name='idx_showing_notes_property'),
+        ]
+
+
 class LeadStage(models.Model):
     name = models.CharField(max_length=50, unique=True)
     stage_order = models.IntegerField(unique=True)
@@ -308,6 +326,9 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     deal = models.ForeignKey('crm.Pipeline', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
     contact = models.ForeignKey('crm.Contact', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
+    showing = models.ForeignKey('crm.Showing', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
+    participants = models.ManyToManyField('crm.Contact', blank=True, related_name='task_participation')
+    properties = models.ManyToManyField('crm.Property', blank=True, related_name='tasks')
     assigned_to = models.ForeignKey('crm.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     due_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
@@ -316,7 +337,10 @@ class Task(models.Model):
     class Meta:
         db_table = 'tasks'
         ordering = ['due_date', 'created_at']
-        indexes = [models.Index(fields=['assigned_to', 'status'], name='idx_tasks_assigned_status')]
+        indexes = [
+            models.Index(fields=['assigned_to', 'status'], name='idx_tasks_assigned_status'),
+            models.Index(fields=['showing', 'status'], name='idx_tasks_showing_status'),
+        ]
 
 
 class Email(models.Model):

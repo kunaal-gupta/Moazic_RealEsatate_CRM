@@ -1,4 +1,4 @@
-import { User, Property, Contact, Deal, Activity, Task, Showing, DealStage, EmailTemplate, Email, Lead, LeadStage, LeadNote, LeadHistory } from '../types';
+import { User, Property, Contact, Deal, Activity, Task, Showing, ShowingNote, DealStage, EmailTemplate, Email, Lead, LeadStage, LeadNote, LeadHistory } from '../types';
 
 const API_BASE = '/api';
 
@@ -75,11 +75,18 @@ export const api = {
     list: () => fetcher<Task[]>('/tasks'),
     create: (data: Partial<Task>) => fetcher<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Task>) => fetcher<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher<void>(`/tasks/${id}`, { method: 'DELETE' }),
   },
   showings: {
     list: () => fetcher<Showing[]>('/showings'),
     create: (data: Partial<Showing>) => fetcher<Showing>('/showings', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Showing>) => fetcher<Showing>(`/showings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  },
+  showingNotes: {
+    list: (showingId?: string) => fetcher<ShowingNote[]>(showingId ? `/showingNotes?showingId=${showingId}` : '/showingNotes'),
+    create: (data: Partial<ShowingNote>) => fetcher<ShowingNote>('/showingNotes', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<ShowingNote>) => fetcher<ShowingNote>(`/showingNotes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher<void>(`/showingNotes/${id}`, { method: 'DELETE' }),
   },
   emailTemplates: {
     list: () => fetcher<EmailTemplate[]>('/emailTemplates'),
