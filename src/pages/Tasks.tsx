@@ -230,7 +230,7 @@ export default function Tasks() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Tasks</h1>
