@@ -145,6 +145,12 @@
   html {
     @apply font-sans;
     }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 90%;
+    }
+  }
 }
 @layer utilities {
   html:not(.dark) {
