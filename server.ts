@@ -195,6 +195,7 @@ async function startServer() {
       { id: 't3', title: 'Schedule inspection for Oak Ridge', status: 'pending', dueDate: new Date(Date.now() + 172800000).toISOString(), description: 'Contact local inspector', dealId: 'd1', assignedTo: 'u2' }
     ],
     showings: [],
+    showingNotes: [],
     emailTemplates: [
       { id: 't1', name: 'Initial Lead Follow-up', subject: 'Welcome to Sollace - Next Steps', body: 'Dear {{contact_name}},\n\nWelcome to Sollace! We are excited to help you with your real estate needs.\n\nBest regards,\n{{agent_name}}' },
       { id: 't2', name: 'Property Showing Confirmation', subject: 'Confirmed: Showing for {{property_address}}', body: 'Hi {{contact_name}},\n\nThis is to confirm your showing for {{property_address}} on {{showing_date}} at {{showing_time}}.\n\nSee you there!' },

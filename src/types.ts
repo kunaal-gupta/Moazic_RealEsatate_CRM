@@ -161,8 +161,11 @@ export interface Task {
 
 export interface ShowingNote {
   id: string;
+  showingId?: string;
   note: string;
   createdAt: string;
+  updatedAt?: string;
+  createdBy?: string;
   propertyId?: string;
 }
 
