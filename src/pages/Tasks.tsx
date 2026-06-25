@@ -8,6 +8,7 @@ import {
   AlertCircle,
   MoreVertical,
   Filter,
+  Search,
   X,
   Trash2,
   Calendar,
@@ -44,7 +45,12 @@ export default function Tasks() {
   const [users, setUsers] = useState<User[]>([]);
   const [showings, setShowings] = useState<Showing[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [statusFilters, setStatusFilters] = useState<Array<Task['status']>>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [assignedFilterIds, setAssignedFilterIds] = useState<string[]>([]);
+  const [clientFilterIds, setClientFilterIds] = useState<string[]>([]);
+  const [propertyFilterIds, setPropertyFilterIds] = useState<string[]>([]);
+  const [dueDateFilter, setDueDateFilter] = useState<'all' | 'overdue' | 'today' | 'upcoming' | 'no-date'>('all');
   const [sortBy, setSortBy] = useState<'dueDate' | 'title' | 'createdAt'>('dueDate');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(true);
@@ -108,7 +114,39 @@ export default function Tasks() {
   };
 
   const filteredTasks = tasks
-    .filter(t => filter === 'all' || t.status === filter)
+    .filter(task => {
+      const taskPropertyIds = task.propertyIds || [];
+      const taskContactIds = task.contactIds || (task.contactId ? [task.contactId] : []);
+      const deal = deals.find(item => item.id === task.dealId);
+      const showing = showings.find(item => item.id === task.showingId);
+      const searchable = [
+        task.title,
+        task.description,
+        task.status,
+        task.assignedTo ? getUser(task.assignedTo)?.fullName : '',
+        taskContactIds.map(id => getContact(id)?.fullName).join(' '),
+        taskPropertyIds.map(id => getProperty(id)?.address).join(' '),
+        deal ? getDealLabel(deal) : '',
+        showing ? getShowingLabel(showing) : ''
+      ].join(' ').toLowerCase();
+      const dueTime = task.dueDate ? new Date(task.dueDate).getTime() : null;
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      const startOfTomorrow = startOfToday + 86400000;
+
+      const matchesSearch = searchable.includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilters.length === 0 || statusFilters.includes(task.status);
+      const matchesAssignee = assignedFilterIds.length === 0 || (task.assignedTo && assignedFilterIds.includes(task.assignedTo));
+      const matchesClients = clientFilterIds.length === 0 || clientFilterIds.some(id => taskContactIds.includes(id));
+      const matchesProperties = propertyFilterIds.length === 0 || propertyFilterIds.some(id => taskPropertyIds.includes(id));
+      const matchesDueDate = dueDateFilter === 'all'
+        || (dueDateFilter === 'no-date' && !task.dueDate)
+        || (dueDateFilter === 'overdue' && dueTime !== null && dueTime < startOfToday && task.status !== 'completed')
+        || (dueDateFilter === 'today' && dueTime !== null && dueTime >= startOfToday && dueTime < startOfTomorrow)
+        || (dueDateFilter === 'upcoming' && dueTime !== null && dueTime >= startOfTomorrow);
+
+      return matchesSearch && matchesStatus && matchesAssignee && matchesClients && matchesProperties && matchesDueDate;
+    })
     .sort((a, b) => {
       if (sortBy === 'dueDate') {
         return new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
@@ -207,32 +245,47 @@ export default function Tasks() {
       </div>
 
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl backdrop-blur-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex bg-slate-800/50 rounded-lg p-1">
-            {['all', 'pending', 'completed'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f as any)}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
-                  filter === f ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-300"
-                )}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
+        <div className="space-y-4 border-b border-slate-800 p-4">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.8fr_0.8fr]">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search tasks, deals, showings, clients, or properties..."
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              />
+            </div>
             <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="appearance-none flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-10"
+              value={dueDateFilter}
+              onChange={(e) => setDueDateFilter(e.target.value as typeof dueDateFilter)}
+              className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
-              <option value="dueDate">Due Date</option>
-              <option value="title">Title</option>
-              <option value="createdAt">Created At</option>
+              <option value="all">All due dates</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Due today</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="no-date">No due date</option>
             </select>
-            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 pr-10 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              >
+                <option value="dueDate">Sort by due date</option>
+                <option value="title">Sort by title</option>
+                <option value="createdAt">Sort by created</option>
+              </select>
+              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+            <MultiSelect label="STATUS" options={[{ id: 'pending', name: 'Pending' }, { id: 'completed', name: 'Completed' }]} selectedIds={statusFilters} onChange={(ids) => setStatusFilters(ids as Array<Task['status']>)} placeholder="All statuses" />
+            <MultiSelect label="ASSIGNED TO" options={users.map(user => ({ id: user.id, name: user.fullName }))} selectedIds={assignedFilterIds} onChange={setAssignedFilterIds} placeholder="All assignees" />
+            <MultiSelect label="CLIENTS" options={contacts.map(contact => ({ id: contact.id, name: contact.fullName }))} selectedIds={clientFilterIds} onChange={setClientFilterIds} placeholder="All clients" />
+            <MultiSelect label="PROPERTIES" options={properties.map(property => ({ id: property.id, name: property.address }))} selectedIds={propertyFilterIds} onChange={setPropertyFilterIds} placeholder="All properties" />
           </div>
         </div>
 
